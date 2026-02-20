@@ -1,35 +1,15 @@
 const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
-const db = require("./database");
+const db = require("../database");
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-  },
-});
 
-const PORT = 3000;
 const SECRET = "segredo_super_delivery";
 
 app.use(express.json());
 app.use(cors());
-
-/* ============================= */
-/* SOCKET CONNECTION */
-/* ============================= */
-io.on("connection", (socket) => {
-  console.log("🔌 Novo usuário conectado:", socket.id);
-
-  socket.on("disconnect", () => {
-    console.log("❌ Usuário desconectado:", socket.id);
-  });
-});
 
 /* ============================= */
 /* REGISTER */
@@ -92,7 +72,7 @@ app.post("/login", (req, res) => {
 });
 
 /* ============================= */
-/* PEDIDOS (SEU SISTEMA ORIGINAL) */
+/* PEDIDOS */
 /* ============================= */
 app.post("/pedido", (req, res) => {
   const { cliente, produto } = req.body;
@@ -120,8 +100,6 @@ app.post("/pedido", (req, res) => {
         status,
       };
 
-      io.emit("novoPedido", novoPedido);
-
       res.status(201).json(novoPedido);
     }
   );
@@ -148,8 +126,6 @@ app.put("/pedido/:id", (req, res) => {
         return res.status(500).json({ erro: err.message });
       }
 
-      io.emit("pedidoAtualizado", { id, status });
-
       res.json({ mensagem: "Status atualizado" });
     }
   );
@@ -163,15 +139,11 @@ app.delete("/pedido/:id", (req, res) => {
       return res.status(500).json({ erro: err.message });
     }
 
-    io.emit("pedidoRemovido", { id });
-
     res.json({ mensagem: "Pedido removido" });
   });
 });
 
 /* ============================= */
-/* START SERVER */
+/* EXPORT PARA VERCEL */
 /* ============================= */
-server.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-});
+module.exports = app;
