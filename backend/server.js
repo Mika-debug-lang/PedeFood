@@ -1,4 +1,4 @@
-require("dotenv").config({ path: __dirname + "/.env" })
+require("dotenv").config()
 
 const express = require("express")
 const bcrypt = require("bcrypt")
@@ -12,12 +12,29 @@ app.use(express.json())
 app.use(cors())
 
 /* ============================= */
+/* VERIFICA VARIÁVEIS IMPORTANTES */
+/* ============================= */
+
+if (!process.env.MONGO_URL) {
+  console.error("MONGO_URL não definida")
+  process.exit(1)
+}
+
+if (!process.env.JWT_SECRET) {
+  console.error("JWT_SECRET não definida")
+  process.exit(1)
+}
+
+/* ============================= */
 /* CONEXÃO MONGODB */
 /* ============================= */
 
 mongoose.connect(process.env.MONGO_URL)
   .then(() => console.log("MongoDB conectado 🚀"))
-  .catch(err => console.log("Erro ao conectar:", err))
+  .catch(err => {
+    console.error("Erro ao conectar no MongoDB:", err)
+    process.exit(1)
+  })
 
 /* ============================= */
 /* MODELS */
@@ -56,10 +73,19 @@ app.get("/", (req, res) => {
 
 app.post("/register", async (req, res) => {
   try {
+    if (!req.body) {
+      return res.status(400).json({ erro: "Body não enviado" })
+    }
+
     const { nome, email, senha, tipo } = req.body
 
     if (!nome || !email || !senha || !tipo) {
       return res.status(400).json({ erro: "Preencha todos os campos" })
+    }
+
+    const usuarioExistente = await Usuario.findOne({ email })
+    if (usuarioExistente) {
+      return res.status(400).json({ erro: "Email já cadastrado" })
     }
 
     const senhaHash = await bcrypt.hash(senha, 10)
@@ -74,7 +100,7 @@ app.post("/register", async (req, res) => {
     res.json({ mensagem: "Usuário criado com sucesso!" })
 
   } catch (error) {
-    res.status(400).json({ erro: "Email já cadastrado ou inválido" })
+    res.status(500).json({ erro: error.message })
   }
 })
 
@@ -84,7 +110,15 @@ app.post("/register", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   try {
+    if (!req.body) {
+      return res.status(400).json({ erro: "Body não enviado" })
+    }
+
     const { email, senha } = req.body
+
+    if (!email || !senha) {
+      return res.status(400).json({ erro: "Email e senha obrigatórios" })
+    }
 
     const usuario = await Usuario.findOne({ email })
 
@@ -188,9 +222,5 @@ if (process.env.NODE_ENV !== "production") {
     console.log("Servidor rodando na porta " + PORT)
   })
 }
-
-/* ============================= */
-/* EXPORT PARA VERCEL */
-/* ============================= */
 
 module.exports = app
