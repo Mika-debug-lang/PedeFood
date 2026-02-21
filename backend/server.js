@@ -1,149 +1,176 @@
-const express = require("express");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const cors = require("cors");
-const db = require("../database");
+require("dotenv").config()
 
-const app = express();
+const express = require("express")
+const bcrypt = require("bcrypt")
+const jwt = require("jsonwebtoken")
+const cors = require("cors")
+const mongoose = require("mongoose")
 
-const SECRET = "segredo_super_delivery";
+const app = express()
 
-app.use(express.json());
-app.use(cors());
+app.use(express.json())
+app.use(cors())
+
+/* ============================= */
+/* CONEXÃO MONGODB */
+/* ============================= */
+
+mongoose.connect(process.env.MONGO_URL)
+  .then(() => console.log("MongoDB conectado 🚀"))
+  .catch(err => console.log("Erro ao conectar:", err))
+
+/* ============================= */
+/* MODELS */
+/* ============================= */
+
+const usuarioSchema = new mongoose.Schema({
+  nome: String,
+  email: { type: String, unique: true },
+  senha: String,
+  tipo: String
+})
+
+const pedidoSchema = new mongoose.Schema({
+  cliente: String,
+  produto: String,
+  status: {
+    type: String,
+    default: "pendente"
+  }
+})
+
+const Usuario = mongoose.model("Usuario", usuarioSchema)
+const Pedido = mongoose.model("Pedido", pedidoSchema)
 
 /* ============================= */
 /* REGISTER */
 /* ============================= */
+
 app.post("/register", async (req, res) => {
-  const { nome, email, senha, tipo } = req.body;
+  try {
+    const { nome, email, senha, tipo } = req.body
 
-  if (!nome || !email || !senha || !tipo) {
-    return res.status(400).json({ erro: "Preencha todos os campos" });
-  }
-
-  const senhaHash = await bcrypt.hash(senha, 10);
-
-  db.run(
-    "INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, ?)",
-    [nome, email, senhaHash, tipo],
-    function (err) {
-      if (err) {
-        return res.status(400).json({ erro: "Email já cadastrado" });
-      }
-
-      res.json({ mensagem: "Usuário criado com sucesso!" });
+    if (!nome || !email || !senha || !tipo) {
+      return res.status(400).json({ erro: "Preencha todos os campos" })
     }
-  );
-});
+
+    const senhaHash = await bcrypt.hash(senha, 10)
+
+    const novoUsuario = await Usuario.create({
+      nome,
+      email,
+      senha: senhaHash,
+      tipo
+    })
+
+    res.json({ mensagem: "Usuário criado com sucesso!" })
+
+  } catch (error) {
+    res.status(400).json({ erro: "Email já cadastrado" })
+  }
+})
 
 /* ============================= */
 /* LOGIN */
 /* ============================= */
-app.post("/login", (req, res) => {
-  const { email, senha } = req.body;
 
-  db.get(
-    "SELECT * FROM usuarios WHERE email = ?",
-    [email],
-    async (err, usuario) => {
-      if (!usuario) {
-        return res.status(400).json({ erro: "Usuário não encontrado" });
-      }
+app.post("/login", async (req, res) => {
+  try {
+    const { email, senha } = req.body
 
-      const senhaValida = await bcrypt.compare(senha, usuario.senha);
+    const usuario = await Usuario.findOne({ email })
 
-      if (!senhaValida) {
-        return res.status(401).json({ erro: "Senha incorreta" });
-      }
-
-      const token = jwt.sign(
-        { id: usuario.id, tipo: usuario.tipo },
-        SECRET,
-        { expiresIn: "1d" }
-      );
-
-      res.json({
-        token,
-        tipo: usuario.tipo,
-        nome: usuario.nome,
-      });
+    if (!usuario) {
+      return res.status(400).json({ erro: "Usuário não encontrado" })
     }
-  );
-});
+
+    const senhaValida = await bcrypt.compare(senha, usuario.senha)
+
+    if (!senhaValida) {
+      return res.status(401).json({ erro: "Senha incorreta" })
+    }
+
+    const token = jwt.sign(
+      { id: usuario._id, tipo: usuario.tipo },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    )
+
+    res.json({
+      token,
+      tipo: usuario.tipo,
+      nome: usuario.nome,
+    })
+
+  } catch (error) {
+    res.status(500).json({ erro: error.message })
+  }
+})
 
 /* ============================= */
 /* PEDIDOS */
 /* ============================= */
-app.post("/pedido", (req, res) => {
-  const { cliente, produto } = req.body;
 
-  if (!cliente || !produto) {
-    return res.status(400).json({
-      erro: "Cliente e produto são obrigatórios",
-    });
+app.post("/pedido", async (req, res) => {
+  try {
+    const { cliente, produto } = req.body
+
+    if (!cliente || !produto) {
+      return res.status(400).json({
+        erro: "Cliente e produto são obrigatórios",
+      })
+    }
+
+    const novoPedido = await Pedido.create({
+      cliente,
+      produto
+    })
+
+    res.status(201).json(novoPedido)
+
+  } catch (error) {
+    res.status(500).json({ erro: error.message })
   }
+})
 
-  const status = "pendente";
+app.get("/pedidos", async (req, res) => {
+  try {
+    const pedidos = await Pedido.find()
+    res.json(pedidos)
+  } catch (error) {
+    res.status(500).json({ erro: error.message })
+  }
+})
 
-  db.run(
-    "INSERT INTO pedidos (cliente, produto, status) VALUES (?, ?, ?)",
-    [cliente, produto, status],
-    function (err) {
-      if (err) {
-        return res.status(500).json({ erro: err.message });
-      }
+app.put("/pedido/:id", async (req, res) => {
+  try {
+    const { id } = req.params
+    const { status } = req.body
 
-      const novoPedido = {
-        id: this.lastID,
-        cliente,
-        produto,
-        status,
-      };
+    await Pedido.findByIdAndUpdate(id, { status })
 
-      res.status(201).json(novoPedido);
-    }
-  );
-});
+    res.json({ mensagem: "Status atualizado" })
 
-app.get("/pedidos", (req, res) => {
-  db.all("SELECT * FROM pedidos", [], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ erro: err.message });
-    }
-    res.json(rows);
-  });
-});
+  } catch (error) {
+    res.status(500).json({ erro: error.message })
+  }
+})
 
-app.put("/pedido/:id", (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
+app.delete("/pedido/:id", async (req, res) => {
+  try {
+    const { id } = req.params
 
-  db.run(
-    "UPDATE pedidos SET status = ? WHERE id = ?",
-    [status, id],
-    function (err) {
-      if (err) {
-        return res.status(500).json({ erro: err.message });
-      }
+    await Pedido.findByIdAndDelete(id)
 
-      res.json({ mensagem: "Status atualizado" });
-    }
-  );
-});
+    res.json({ mensagem: "Pedido removido" })
 
-app.delete("/pedido/:id", (req, res) => {
-  const { id } = req.params;
-
-  db.run("DELETE FROM pedidos WHERE id = ?", [id], function (err) {
-    if (err) {
-      return res.status(500).json({ erro: err.message });
-    }
-
-    res.json({ mensagem: "Pedido removido" });
-  });
-});
+  } catch (error) {
+    res.status(500).json({ erro: error.message })
+  }
+})
 
 /* ============================= */
 /* EXPORT PARA VERCEL */
 /* ============================= */
-module.exports = app;
+
+module.exports = app
