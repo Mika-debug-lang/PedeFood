@@ -24,15 +24,15 @@ mongoose.connect(process.env.MONGO_URL)
 /* ============================= */
 
 const usuarioSchema = new mongoose.Schema({
-  nome: String,
-  email: { type: String, unique: true },
-  senha: String,
-  tipo: String
+  nome: { type: String, required: true },
+  email: { type: String, unique: true, required: true },
+  senha: { type: String, required: true },
+  tipo: { type: String, required: true }
 })
 
 const pedidoSchema = new mongoose.Schema({
-  cliente: String,
-  produto: String,
+  cliente: { type: String, required: true },
+  produto: { type: String, required: true },
   status: {
     type: String,
     default: "pendente"
@@ -41,6 +41,14 @@ const pedidoSchema = new mongoose.Schema({
 
 const Usuario = mongoose.model("Usuario", usuarioSchema)
 const Pedido = mongoose.model("Pedido", pedidoSchema)
+
+/* ============================= */
+/* ROTA TESTE */
+/* ============================= */
+
+app.get("/", (req, res) => {
+  res.json({ mensagem: "API do Delivery funcionando 🚀" })
+})
 
 /* ============================= */
 /* REGISTER */
@@ -56,7 +64,7 @@ app.post("/register", async (req, res) => {
 
     const senhaHash = await bcrypt.hash(senha, 10)
 
-    const novoUsuario = await Usuario.create({
+    await Usuario.create({
       nome,
       email,
       senha: senhaHash,
@@ -66,7 +74,7 @@ app.post("/register", async (req, res) => {
     res.json({ mensagem: "Usuário criado com sucesso!" })
 
   } catch (error) {
-    res.status(400).json({ erro: "Email já cadastrado" })
+    res.status(400).json({ erro: "Email já cadastrado ou inválido" })
   }
 })
 
@@ -168,6 +176,18 @@ app.delete("/pedido/:id", async (req, res) => {
     res.status(500).json({ erro: error.message })
   }
 })
+
+/* ============================= */
+/* INICIAR SERVIDOR */
+/* ============================= */
+
+const PORT = process.env.PORT || 3000
+
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    console.log("Servidor rodando na porta " + PORT)
+  })
+}
 
 /* ============================= */
 /* EXPORT PARA VERCEL */
