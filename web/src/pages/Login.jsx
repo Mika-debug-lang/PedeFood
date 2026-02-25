@@ -11,9 +11,8 @@ function Login() {
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 🔥 URL da API (produção ou local)
-  const API_URL =
-    import.meta.env.VITE_API_URL || "http://localhost:3000";
+  // ✅ OBRIGATÓRIO: variável de ambiente
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const validarEmail = (email) => {
     return /\S+@\S+\.\S+/.test(email);
@@ -22,6 +21,11 @@ function Login() {
   const entrar = async (e) => {
     e.preventDefault();
     setErro("");
+
+    if (!API_URL) {
+      setErro("URL da API não configurada.");
+      return;
+    }
 
     if (!email.trim() || !senha.trim()) {
       setErro("Preencha todos os campos.");
@@ -44,7 +48,6 @@ function Login() {
         body: JSON.stringify({ email, senha })
       });
 
-      // 🔥 Evita erro se backend não responder JSON válido
       let data;
       try {
         data = await response.json();
@@ -72,7 +75,6 @@ function Login() {
 
       login(usuarioFormatado);
 
-      // 🔥 Redirecionamento por tipo
       switch (data.tipo) {
         case "cliente":
           navigate("/cliente");
