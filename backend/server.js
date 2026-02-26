@@ -20,6 +20,7 @@ app.use(express.json());
 
 const allowedOrigins = [
   "https://pede-food.vercel.app",
+  "https://pede-food-qgbkawgaq-mikael-lins-projects.vercel.app",
   "http://localhost:5173",
 ];
 
