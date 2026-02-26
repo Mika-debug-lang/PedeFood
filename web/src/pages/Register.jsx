@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:3000";
+const API_URL = "https://delivery-backend.onrender.com";
 // 🔥 IMPORTANTE: use 127.0.0.1 para evitar conflito localhost/ipv6
 
 function Register() {
