@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 // 🔥 Usa variável de ambiente (produção) ou fallback local (dev)
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  "https://delivery-backend.onrender.com";
+  "https://pedefood.onrender.com";
 
 function Register() {
   const navigate = useNavigate();
