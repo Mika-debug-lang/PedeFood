@@ -15,7 +15,7 @@ const app = express();
 app.use(express.json());
 
 /* ============================= */
-/* CORS CONFIGURADO CORRETAMENTE */
+/* CORS */
 /* ============================= */
 
 const allowedOrigins = [
@@ -26,12 +26,12 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Permite requisições sem origin (ex: Postman)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.indexOf(origin) !== -1) {
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.log("❌ CORS bloqueado:", origin);
         callback(new Error("Não permitido pelo CORS"));
       }
     },
@@ -60,8 +60,12 @@ if (!process.env.JWT_SECRET) {
 
 async function conectarMongo() {
   try {
-    await mongoose.connect(process.env.MONGO_URL);
-    console.log("✅ MongoDB conectado");
+    await mongoose.connect(process.env.MONGO_URL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    console.log("✅ MongoDB conectado com sucesso");
   } catch (err) {
     console.error("❌ Erro ao conectar no MongoDB:", err.message);
     process.exit(1);
@@ -98,7 +102,7 @@ const Usuario = mongoose.model("Usuario", usuarioSchema);
 const Pedido = mongoose.model("Pedido", pedidoSchema);
 
 /* ============================= */
-/* MIDDLEWARE DE AUTENTICAÇÃO */
+/* MIDDLEWARE AUTENTICAÇÃO */
 /* ============================= */
 
 function autenticarToken(req, res, next) {
@@ -124,7 +128,10 @@ function autenticarToken(req, res, next) {
 /* ============================= */
 
 app.get("/", (req, res) => {
-  res.json({ mensagem: "API do Delivery funcionando 🚀" });
+  res.json({
+    status: "online",
+    mensagem: "API do Delivery funcionando 🚀",
+  });
 });
 
 /* ============================= */
@@ -158,7 +165,8 @@ app.post("/register", async (req, res) => {
       id: novoUsuario._id,
     });
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error("Erro no register:", error);
+    res.status(500).json({ erro: "Erro interno do servidor" });
   }
 });
 
@@ -197,7 +205,8 @@ app.post("/login", async (req, res) => {
       email: usuario.email,
     });
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error("Erro no login:", error);
+    res.status(500).json({ erro: "Erro interno do servidor" });
   }
 });
 
@@ -222,7 +231,8 @@ app.post("/pedido", autenticarToken, async (req, res) => {
 
     res.status(201).json(novoPedido);
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error("Erro ao criar pedido:", error);
+    res.status(500).json({ erro: "Erro interno do servidor" });
   }
 });
 
@@ -231,7 +241,8 @@ app.get("/pedidos", autenticarToken, async (req, res) => {
     const pedidos = await Pedido.find().sort({ createdAt: -1 });
     res.json(pedidos);
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error("Erro ao buscar pedidos:", error);
+    res.status(500).json({ erro: "Erro interno do servidor" });
   }
 });
 
@@ -248,7 +259,8 @@ app.put("/pedido/:id", autenticarToken, async (req, res) => {
 
     res.json({ mensagem: "Status atualizado" });
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error("Erro ao atualizar pedido:", error);
+    res.status(500).json({ erro: "Erro interno do servidor" });
   }
 });
 
@@ -260,8 +272,17 @@ app.delete("/pedido/:id", autenticarToken, async (req, res) => {
 
     res.json({ mensagem: "Pedido removido" });
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error("Erro ao deletar pedido:", error);
+    res.status(500).json({ erro: "Erro interno do servidor" });
   }
+});
+
+/* ============================= */
+/* ROTA 404 */
+/* ============================= */
+
+app.use((req, res) => {
+  res.status(404).json({ erro: "Rota não encontrada" });
 });
 
 /* ============================= */
