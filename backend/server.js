@@ -15,31 +15,21 @@ const app = express();
 app.use(express.json());
 
 /* ============================= */
-/* CORS */
+/* CORS DEFINITIVO */
 /* ============================= */
 
-const allowedOrigins = [
-  "https://pede-food.vercel.app",
-  "https://pede-food-qgbkawgaq-mikael-lins-projects.vercel.app",
-  "http://localhost:5173",
-];
-
+// Permite qualquer domínio (resolve problema da Vercel dinâmica)
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.log("❌ CORS bloqueado:", origin);
-        callback(new Error("Não permitido pelo CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: true,
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// Garante resposta correta para preflight
+app.options("*", cors());
 
 /* ============================= */
 /* VERIFICA VARIÁVEIS IMPORTANTES */
@@ -61,11 +51,7 @@ if (!process.env.JWT_SECRET) {
 
 async function conectarMongo() {
   try {
-    await mongoose.connect(process.env.MONGO_URL, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-
+    await mongoose.connect(process.env.MONGO_URL);
     console.log("✅ MongoDB conectado com sucesso");
   } catch (err) {
     console.error("❌ Erro ao conectar no MongoDB:", err.message);
@@ -91,10 +77,7 @@ const pedidoSchema = new mongoose.Schema(
   {
     cliente: { type: String, required: true },
     produto: { type: String, required: true },
-    status: {
-      type: String,
-      default: "pendente",
-    },
+    status: { type: String, default: "pendente" },
   },
   { timestamps: true }
 );
@@ -212,7 +195,7 @@ app.post("/login", async (req, res) => {
 });
 
 /* ============================= */
-/* PEDIDOS (PROTEGIDO) */
+/* PEDIDOS */
 /* ============================= */
 
 app.post("/pedido", autenticarToken, async (req, res) => {
