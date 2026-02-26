@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = "https://delivery-backend.onrender.com";
-// 🔥 IMPORTANTE: use 127.0.0.1 para evitar conflito localhost/ipv6
+// 🔥 Usa variável de ambiente (produção) ou fallback local (dev)
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://delivery-backend.onrender.com";
 
 function Register() {
   const navigate = useNavigate();
@@ -38,15 +40,21 @@ function Register() {
       const response = await fetch(`${API_URL}/register`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ nome, email, senha, tipo })
+        body: JSON.stringify({ nome, email, senha, tipo }),
       });
 
-      // 🔥 PROTEÇÃO EXTRA
+      let data = null;
+
+      try {
+        data = await response.json();
+      } catch {
+        // evita crash se backend não retornar JSON
+      }
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        setErro(errorData?.erro || "Erro ao registrar.");
+        setErro(data?.erro || "Erro ao registrar.");
         return;
       }
 
@@ -55,7 +63,7 @@ function Register() {
 
     } catch (error) {
       console.error("ERRO COMPLETO:", error);
-      setErro("Servidor indisponível. Verifique se o backend está rodando.");
+      setErro("Erro de conexão com o servidor.");
     } finally {
       setLoading(false);
     }
@@ -108,7 +116,7 @@ function Register() {
           style={{
             ...styles.button,
             opacity: loading ? 0.7 : 1,
-            cursor: loading ? "not-allowed" : "pointer"
+            cursor: loading ? "not-allowed" : "pointer",
           }}
         >
           {loading ? "Registrando..." : "Registrar"}
@@ -128,7 +136,7 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "#f4f6f9"
+    background: "#f4f6f9",
   },
   card: {
     background: "#fff",
@@ -136,14 +144,14 @@ const styles = {
     borderRadius: "10px",
     boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
     width: "350px",
-    textAlign: "center"
+    textAlign: "center",
   },
   input: {
     width: "100%",
     padding: "10px",
     margin: "10px 0",
     borderRadius: "5px",
-    border: "1px solid #ccc"
+    border: "1px solid #ccc",
   },
   button: {
     width: "100%",
@@ -152,19 +160,19 @@ const styles = {
     color: "#fff",
     border: "none",
     borderRadius: "5px",
-    fontWeight: "bold"
+    fontWeight: "bold",
   },
   error: {
     color: "red",
     fontSize: "14px",
-    marginBottom: "10px"
+    marginBottom: "10px",
   },
   link: {
     marginTop: "15px",
     color: "#2c7be5",
     cursor: "pointer",
-    fontSize: "14px"
-  }
+    fontSize: "14px",
+  },
 };
 
 export default Register;
