@@ -15,21 +15,17 @@ const app = express();
 app.use(express.json());
 
 /* ============================= */
-/* CORS DEFINITIVO */
+/* CORS CORRIGIDO (SEM "*") */
 /* ============================= */
 
-// Permite qualquer domínio (resolve problema da Vercel dinâmica)
 app.use(
   cors({
-    origin: true,
+    origin: true, // permite qualquer origem (resolve Vercel dinâmica)
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
-// Garante resposta correta para preflight
-app.options("*", cors());
 
 /* ============================= */
 /* VERIFICA VARIÁVEIS IMPORTANTES */
@@ -262,7 +258,7 @@ app.delete("/pedido/:id", autenticarToken, async (req, res) => {
 });
 
 /* ============================= */
-/* ROTA 404 */
+/* ROTA 404 (SEM "*") */
 /* ============================= */
 
 app.use((req, res) => {
