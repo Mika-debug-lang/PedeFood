@@ -15,20 +15,18 @@ const app = express();
 app.use(express.json());
 
 /* ============================= */
-/* CORS CORRIGIDO (SEM "*") */
+/* CORS ESTÁVEL */
 /* ============================= */
 
 app.use(
   cors({
-    origin: true, // permite qualquer origem (resolve Vercel dinâmica)
+    origin: true,
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
 /* ============================= */
-/* VERIFICA VARIÁVEIS IMPORTANTES */
+/* VARIÁVEIS OBRIGATÓRIAS */
 /* ============================= */
 
 if (!process.env.MONGO_URL) {
@@ -48,9 +46,9 @@ if (!process.env.JWT_SECRET) {
 async function conectarMongo() {
   try {
     await mongoose.connect(process.env.MONGO_URL);
-    console.log("✅ MongoDB conectado com sucesso");
+    console.log("✅ MongoDB conectado");
   } catch (err) {
-    console.error("❌ Erro ao conectar no MongoDB:", err.message);
+    console.error("❌ Erro MongoDB:", err.message);
     process.exit(1);
   }
 }
@@ -82,7 +80,7 @@ const Usuario = mongoose.model("Usuario", usuarioSchema);
 const Pedido = mongoose.model("Pedido", pedidoSchema);
 
 /* ============================= */
-/* MIDDLEWARE AUTENTICAÇÃO */
+/* MIDDLEWARE TOKEN */
 /* ============================= */
 
 function autenticarToken(req, res, next) {
@@ -98,7 +96,7 @@ function autenticarToken(req, res, next) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.usuario = decoded;
     next();
-  } catch (error) {
+  } catch {
     return res.status(403).json({ erro: "Token inválido ou expirado" });
   }
 }
@@ -110,13 +108,11 @@ function autenticarToken(req, res, next) {
 app.get("/", (req, res) => {
   res.json({
     status: "online",
-    mensagem: "API do Delivery funcionando 🚀",
+    mensagem: "API funcionando 🚀",
   });
 });
 
-/* ============================= */
 /* REGISTER */
-/* ============================= */
 
 app.post("/register", async (req, res) => {
   try {
@@ -141,18 +137,16 @@ app.post("/register", async (req, res) => {
     });
 
     res.status(201).json({
-      mensagem: "Usuário criado com sucesso!",
+      mensagem: "Usuário criado",
       id: novoUsuario._id,
     });
-  } catch (error) {
-    console.error("Erro no register:", error);
-    res.status(500).json({ erro: "Erro interno do servidor" });
+  } catch (err) {
+    console.error("Erro register:", err);
+    res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-/* ============================= */
 /* LOGIN */
-/* ============================= */
 
 app.post("/login", async (req, res) => {
   try {
@@ -180,39 +174,30 @@ app.post("/login", async (req, res) => {
 
     res.json({
       token,
-      tipo: usuario.tipo,
       nome: usuario.nome,
-      email: usuario.email,
+      tipo: usuario.tipo,
     });
-  } catch (error) {
-    console.error("Erro no login:", error);
-    res.status(500).json({ erro: "Erro interno do servidor" });
+  } catch (err) {
+    console.error("Erro login:", err);
+    res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-/* ============================= */
 /* PEDIDOS */
-/* ============================= */
 
 app.post("/pedido", autenticarToken, async (req, res) => {
   try {
     const { cliente, produto } = req.body;
 
     if (!cliente || !produto) {
-      return res.status(400).json({
-        erro: "Cliente e produto são obrigatórios",
-      });
+      return res.status(400).json({ erro: "Dados obrigatórios" });
     }
 
-    const novoPedido = await Pedido.create({
-      cliente,
-      produto,
-    });
-
-    res.status(201).json(novoPedido);
-  } catch (error) {
-    console.error("Erro ao criar pedido:", error);
-    res.status(500).json({ erro: "Erro interno do servidor" });
+    const pedido = await Pedido.create({ cliente, produto });
+    res.status(201).json(pedido);
+  } catch (err) {
+    console.error("Erro pedido:", err);
+    res.status(500).json({ erro: "Erro interno" });
   }
 });
 
@@ -220,45 +205,14 @@ app.get("/pedidos", autenticarToken, async (req, res) => {
   try {
     const pedidos = await Pedido.find().sort({ createdAt: -1 });
     res.json(pedidos);
-  } catch (error) {
-    console.error("Erro ao buscar pedidos:", error);
-    res.status(500).json({ erro: "Erro interno do servidor" });
-  }
-});
-
-app.put("/pedido/:id", autenticarToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    if (!status) {
-      return res.status(400).json({ erro: "Status é obrigatório" });
-    }
-
-    await Pedido.findByIdAndUpdate(id, { status });
-
-    res.json({ mensagem: "Status atualizado" });
-  } catch (error) {
-    console.error("Erro ao atualizar pedido:", error);
-    res.status(500).json({ erro: "Erro interno do servidor" });
-  }
-});
-
-app.delete("/pedido/:id", autenticarToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    await Pedido.findByIdAndDelete(id);
-
-    res.json({ mensagem: "Pedido removido" });
-  } catch (error) {
-    console.error("Erro ao deletar pedido:", error);
-    res.status(500).json({ erro: "Erro interno do servidor" });
+  } catch (err) {
+    console.error("Erro pedidos:", err);
+    res.status(500).json({ erro: "Erro interno" });
   }
 });
 
 /* ============================= */
-/* ROTA 404 (SEM "*") */
+/* 404 */
 /* ============================= */
 
 app.use((req, res) => {
@@ -271,10 +225,13 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 10000;
 
-conectarMongo().then(() => {
+async function startServer() {
+  await conectarMongo();
   app.listen(PORT, () => {
-    console.log("🚀 Servidor rodando na porta " + PORT);
+    console.log("🚀 Servidor rodando na porta", PORT);
   });
-});
+}
+
+startServer();
 
 module.exports = app;
