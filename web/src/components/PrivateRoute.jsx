@@ -5,41 +5,42 @@ import AuthContext from "../context/AuthContext";
 function PrivateRoute({ children, allowed }) {
   const { user, loading } = useContext(AuthContext);
 
-  // ⏳ Enquanto verifica login
-  if (loading) {
-    return null; // pode trocar por spinner
-  }
+  // ⏳ Esperando autenticação
+  if (loading) return null;
 
   // 🚫 Não logado
-  if (!user) {
+  if (!user || !user.token) {
     return <Navigate to="/login" replace />;
   }
 
-  // 🚫 Sem tipo definido
-  if (!user.tipo) {
+  // 🚫 Sem roles definidas
+  if (!user.roles || user.roles.length === 0) {
     return <Navigate to="/login" replace />;
   }
 
-  // 🔎 Se houver regra de permissão
+  // 🔎 Se houver restrição de acesso
   if (allowed) {
     const allowedRoles = Array.isArray(allowed)
       ? allowed
       : [allowed];
 
-    if (!allowedRoles.includes(user.tipo)) {
-      // 🔁 Redireciona para área correta
-      switch (user.tipo) {
-        case "cliente":
-          return <Navigate to="/cliente" replace />;
-        case "dono":
-          return <Navigate to="/dono" replace />;
-        case "motoboy":
-          return <Navigate to="/motoboy" replace />;
-        case "admin":
-          return <Navigate to="/admin" replace />;
-        default:
-          return <Navigate to="/login" replace />;
+    const possuiPermissao = allowedRoles.some((role) =>
+      user.roles.includes(role)
+    );
+
+    if (!possuiPermissao) {
+      // 🔁 Redireciona para primeira role válida do usuário
+      const prioridade = ["admin", "dono", "motoboy", "cliente"];
+
+      const roleDestino = prioridade.find((role) =>
+        user.roles.includes(role)
+      );
+
+      if (roleDestino) {
+        return <Navigate to={`/${roleDestino}`} replace />;
       }
+
+      return <Navigate to="/login" replace />;
     }
   }
 

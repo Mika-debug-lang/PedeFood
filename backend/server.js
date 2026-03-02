@@ -11,7 +11,11 @@ const Produto = require("./models/Produto");
 
 const app = express();
 
-/* ================= CORS PRODUÇÃO ================= */
+/* ================= CONFIG ================= */
+
+const ROLES_VALIDAS = ["cliente", "dono", "motoboy", "admin"];
+
+/* ================= CORS ================= */
 
 app.use(
   cors({
@@ -50,24 +54,29 @@ mongoose
     process.exit(1);
   });
 
-/* ================= MODELS ================= */
+/* ================= MODEL USUÁRIO ================= */
 
 const usuarioSchema = new mongoose.Schema(
   {
     nome: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     senha: { type: String, required: true },
-    roles: { type: [String], default: ["cliente"] },
+    roles: {
+      type: [String],
+      enum: ROLES_VALIDAS,
+      default: ["cliente"],
+    },
   },
   { timestamps: true }
 );
 
 const Usuario = mongoose.model("Usuario", usuarioSchema);
 
-/* ================= MIDDLEWARE ================= */
+/* ================= MIDDLEWARE AUTH ================= */
 
 function autenticarToken(req, res, next) {
   const authHeader = req.headers.authorization;
+
   if (!authHeader)
     return res.status(401).json({ erro: "Token não fornecido" });
 
@@ -77,12 +86,12 @@ function autenticarToken(req, res, next) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     req.usuario = {
-      id: decoded.id?.toString(),
+      id: decoded.id,
       roles: decoded.roles || [],
     };
 
     next();
-  } catch {
+  } catch (err) {
     return res.status(403).json({ erro: "Token inválido" });
   }
 }
@@ -109,33 +118,41 @@ app.post("/register", async (req, res) => {
     if (!nome || !email || !senha || !tipo)
       return res.status(400).json({ erro: "Preencha todos os campos" });
 
-    if (tipo === "admin")
-      return res.status(403).json({ erro: "Tipo inválido" });
+    if (!ROLES_VALIDAS.includes(tipo) || tipo === "admin")
+      return res.status(400).json({ erro: "Tipo inválido" });
 
     const emailNormalizado = email.trim().toLowerCase();
+
     let usuario = await Usuario.findOne({ email: emailNormalizado });
 
     if (usuario) {
       if (usuario.roles.includes(tipo))
         return res
           .status(400)
-          .json({ erro: `Usuário já cadastrado como ${tipo}` });
+          .json({ erro: `Usuário já possui permissão '${tipo}'` });
 
       usuario.roles.push(tipo);
       await usuario.save();
-      return res.json({ mensagem: `Permissão '${tipo}' adicionada!` });
+
+      return res.json({
+        mensagem: `Permissão '${tipo}' adicionada com sucesso`,
+        roles: usuario.roles,
+      });
     }
 
     const senhaHash = await bcrypt.hash(senha, 10);
 
-    await Usuario.create({
+    const novoUsuario = await Usuario.create({
       nome,
       email: emailNormalizado,
       senha: senhaHash,
       roles: [tipo],
     });
 
-    res.status(201).json({ mensagem: "Usuário criado!" });
+    res.status(201).json({
+      mensagem: "Usuário criado com sucesso",
+      roles: novoUsuario.roles,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ erro: "Erro interno" });
@@ -150,6 +167,9 @@ app.post("/login", async (req, res) => {
 
     if (!email || !senha || !tipo)
       return res.status(400).json({ erro: "Campos obrigatórios" });
+
+    if (!ROLES_VALIDAS.includes(tipo))
+      return res.status(400).json({ erro: "Tipo inválido" });
 
     const usuario = await Usuario.findOne({
       email: email.toLowerCase(),
@@ -166,6 +186,8 @@ app.post("/login", async (req, res) => {
     if (!senhaValida)
       return res.status(401).json({ erro: "Senha incorreta" });
 
+    /* ================= ADMIN AUTOMÁTICO ================= */
+
     if (usuario.email === process.env.ADMIN_EMAIL) {
       if (!usuario.roles.includes("admin")) {
         usuario.roles.push("admin");
@@ -179,7 +201,10 @@ app.post("/login", async (req, res) => {
         .json({ erro: "Acesso negado para essa área" });
 
     const token = jwt.sign(
-      { id: usuario._id.toString(), roles: usuario.roles },
+      {
+        id: usuario._id.toString(),
+        roles: usuario.roles,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -188,6 +213,7 @@ app.post("/login", async (req, res) => {
       nome: usuario.nome,
       email: usuario.email,
       tipo,
+      roles: usuario.roles,
       token,
     });
   } catch (err) {
