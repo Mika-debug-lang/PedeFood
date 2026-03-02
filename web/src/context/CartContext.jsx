@@ -5,6 +5,11 @@ const CartContext = createContext(null);
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [notificacao, setNotificacao] = useState(null);
+
+  /* =========================
+     CARRINHO
+  ========================== */
 
   const addToCart = (produto, loja) => {
     setCart((prev) => {
@@ -43,12 +48,18 @@ export const CartProvider = ({ children }) => {
     0
   );
 
+  /* =========================
+     FINALIZAR PEDIDO
+  ========================== */
+
   const finalizarPedido = (pagamento, entrega, user) => {
+    if (cart.length === 0) return;
+
     const frete = entrega === "motoboy" ? 8 : 0;
     const total = subtotal + frete;
 
     const novoPedido = {
-      id: Date.now(),
+      id: crypto.randomUUID(),
       cliente: user?.nome,
       email: user?.email,
       itens: cart,
@@ -57,19 +68,92 @@ export const CartProvider = ({ children }) => {
       frete,
       total,
       status: "pendente",
+      historicoStatus: [
+        { status: "pendente", data: new Date() }
+      ],
       criadoEm: new Date()
     };
 
     setOrders((prev) => [...prev, novoPedido]);
     setCart([]);
+
+    mostrarNotificacao("Pedido realizado com sucesso!");
   };
+
+  /* =========================
+     ATUALIZAR STATUS
+  ========================== */
+
+  const atualizarStatus = (id, novoStatus) => {
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id === id) {
+          return {
+            ...order,
+            status: novoStatus,
+            historicoStatus: [
+              ...order.historicoStatus,
+              { status: novoStatus, data: new Date() }
+            ]
+          };
+        }
+        return order;
+      })
+    );
+
+    mostrarNotificacao(
+      `Seu pedido está agora: ${novoStatus.replaceAll("_", " ")}`
+    );
+  };
+
+  /* =========================
+     CANCELAR PEDIDO
+  ========================== */
 
   const cancelarPedido = (id, motivo) => {
     setOrders((prev) =>
-      prev.map((o) =>
-        o.id === id ? { ...o, status: "cancelado", motivo } : o
+      prev.map((order) => {
+        if (order.id === id) {
+          return {
+            ...order,
+            status: "cancelado",
+            motivo,
+            historicoStatus: [
+              ...order.historicoStatus,
+              { status: "cancelado", data: new Date() }
+            ]
+          };
+        }
+        return order;
+      })
+    );
+
+    mostrarNotificacao("Pedido cancelado.");
+  };
+
+  /* =========================
+     LIMPAR FINALIZADOS
+  ========================== */
+
+  const limparFinalizados = () => {
+    setOrders((prev) =>
+      prev.filter(
+        (order) =>
+          order.status !== "cancelado" &&
+          order.status !== "entregue"
       )
     );
+
+    mostrarNotificacao("Pedidos finalizados removidos.");
+  };
+
+  /* =========================
+     NOTIFICAÇÃO
+  ========================== */
+
+  const mostrarNotificacao = (msg) => {
+    setNotificacao(msg);
+    setTimeout(() => setNotificacao(null), 3000);
   };
 
   return (
@@ -77,12 +161,15 @@ export const CartProvider = ({ children }) => {
       value={{
         cart,
         orders,
+        notificacao,
         addToCart,
         removeFromCart,
         clearCart,
         subtotal,
         finalizarPedido,
-        cancelarPedido
+        cancelarPedido,
+        atualizarStatus,
+        limparFinalizados
       }}
     >
       {children}

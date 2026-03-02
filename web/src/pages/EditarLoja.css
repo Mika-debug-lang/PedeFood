@@ -1,0 +1,109 @@
+.editar-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f4f6f9;
+  padding: 40px;
+}
+
+.editar-card {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 550px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.editar-card h1 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.editar-card input,
+.editar-card textarea {
+  padding: 12px 15px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  outline: none;
+  transition: 0.2s;
+}
+
+.editar-card input:focus,
+.editar-card textarea:focus {
+  border-color: #ff2d55;
+}
+
+.editar-card textarea {
+  min-height: 100px;
+  resize: none;
+}
+
+.editar-preview {
+  display: flex;
+  justify-content: center;
+}
+
+.editar-preview img {
+  width: 200px;
+  border-radius: 16px;
+}
+
+.editar-upload {
+  background: #eee;
+  padding: 12px;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.editar-upload:hover {
+  background: #ddd;
+}
+
+.btn-salvar {
+  background: linear-gradient(90deg, #ff2d55, #ff4b2b);
+  border: none;
+  padding: 14px;
+  border-radius: 14px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-salvar:hover {
+  transform: translateY(-2px);
+}
+
+.btn-voltar {
+  background: #333;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.editar-mensagem {
+  background: #e6ffe6;
+  padding: 10px;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.editar-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+  font-size: 18px;
+}

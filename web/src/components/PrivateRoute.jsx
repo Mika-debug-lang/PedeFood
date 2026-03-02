@@ -1,13 +1,29 @@
 import { useContext } from "react";
-import AuthContext from "../context/AuthContext";
 import { Navigate } from "react-router-dom";
+import AuthContext from "../context/AuthContext";
 
 function PrivateRoute({ children, allowed }) {
-  const { user } = useContext(AuthContext);
+  const { user, loading } = useContext(AuthContext);
 
-  if (!user) return <Navigate to="/" />;
+  // 🔄 Enquanto estiver carregando o user do localStorage
+  if (loading) {
+    return null; // ou pode colocar um spinner
+  }
 
-  if (user.tipo !== allowed) return <Navigate to="/" />;
+  // 🚫 Não logado
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
+  // 🚫 Sem tipo definido
+  if (!user.tipo) {
+    return <Navigate to="/" replace />;
+  }
+
+  // 🚫 Tipo diferente do permitido
+  if (allowed && user.tipo !== allowed) {
+    return <Navigate to="/" replace />;
+  }
 
   return children;
 }

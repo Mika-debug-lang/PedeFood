@@ -1,0 +1,137 @@
+/* ================= CONTAINER ================= */
+
+.login-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #e60023, #ff4d6d);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* ================= CARD ================= */
+
+.login-card {
+  background: white;
+  padding: 40px;
+  width: 350px;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+  text-align: center;
+  animation: fadeIn 0.6s ease;
+}
+
+/* ================= TITULO ================= */
+
+.login-title {
+  font-size: 28px;
+  margin-bottom: 8px;
+  color: #222;
+}
+
+.login-subtitle {
+  font-size: 14px;
+  color: #777;
+  margin-bottom: 25px;
+}
+
+/* ================= FORM ================= */
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.login-form input {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  outline: none;
+  transition: 0.3s;
+  font-size: 14px;
+}
+
+.login-form input:focus {
+  border-color: #e60023;
+  box-shadow: 0 0 8px rgba(230,0,35,0.3);
+}
+
+/* ================= BOTÃO ================= */
+
+.login-form button {
+  padding: 12px;
+  border-radius: 30px;
+  border: none;
+  background: linear-gradient(90deg, #e60023, #ff4d6d);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.login-form button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+/* ================= ERRO ================= */
+
+.login-error {
+  background: #ffe5e5;
+  color: #d00000;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 15px;
+}
+
+/* ================= ANIMAÇÃO ================= */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ================= SELECT ================= */
+
+.login-select {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  outline: none;
+  transition: 0.3s;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+}
+
+.login-select:focus {
+  border-color: #e60023;
+  box-shadow: 0 0 8px rgba(230,0,35,0.3);
+}
+
+/* ================= LINKS ================= */
+
+.login-links {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.login-links span {
+  color: #e60023;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.login-links span:hover {
+  text-decoration: underline;
+}

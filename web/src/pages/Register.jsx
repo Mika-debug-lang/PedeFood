@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-// 🔥 Usa variável de ambiente (produção) ou fallback local (dev)
 const API_URL =
   import.meta.env.VITE_API_URL ||
   "https://pedefood.onrender.com";
@@ -16,20 +15,24 @@ function Register() {
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const validarEmail = (email) => {
-    return /\S+@\S+\.\S+/.test(email);
+  const validarEmail = (emailValue) => {
+    return /\S+@\S+\.\S+/.test(emailValue);
   };
 
   const cadastrar = async (e) => {
     e.preventDefault();
     setErro("");
 
-    if (!nome.trim() || !email.trim() || !senha.trim()) {
+    const nomeLimpo = nome.trim();
+    const emailLimpo = email.trim().toLowerCase();
+    const senhaLimpa = senha.trim();
+
+    if (!nomeLimpo || !emailLimpo || !senhaLimpa) {
       setErro("Preencha todos os campos.");
       return;
     }
 
-    if (!validarEmail(email)) {
+    if (!validarEmail(emailLimpo)) {
       setErro("Digite um email válido.");
       return;
     }
@@ -40,17 +43,22 @@ function Register() {
       const response = await fetch(`${API_URL}/register`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ nome, email, senha, tipo }),
+        body: JSON.stringify({
+          nome: nomeLimpo,
+          email: emailLimpo,
+          senha: senhaLimpa,
+          tipo
+        })
       });
 
-      let data = null;
+      let data = {};
 
       try {
         data = await response.json();
-      } catch {
-        // evita crash se backend não retornar JSON
+      } catch (jsonError) {
+        console.error("Erro ao converter resposta:", jsonError);
       }
 
       if (!response.ok) {
@@ -58,11 +66,11 @@ function Register() {
         return;
       }
 
-      alert("Conta criada com sucesso!");
+      alert(data?.mensagem || "Operação realizada com sucesso!");
       navigate("/");
 
     } catch (error) {
-      console.error("ERRO COMPLETO:", error);
+      console.error("Erro completo:", error);
       setErro("Erro de conexão com o servidor.");
     } finally {
       setLoading(false);
@@ -116,7 +124,7 @@ function Register() {
           style={{
             ...styles.button,
             opacity: loading ? 0.7 : 1,
-            cursor: loading ? "not-allowed" : "pointer",
+            cursor: loading ? "not-allowed" : "pointer"
           }}
         >
           {loading ? "Registrando..." : "Registrar"}
@@ -136,7 +144,7 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "#f4f6f9",
+    background: "#f4f6f9"
   },
   card: {
     background: "#fff",
@@ -144,14 +152,14 @@ const styles = {
     borderRadius: "10px",
     boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
     width: "350px",
-    textAlign: "center",
+    textAlign: "center"
   },
   input: {
     width: "100%",
     padding: "10px",
     margin: "10px 0",
     borderRadius: "5px",
-    border: "1px solid #ccc",
+    border: "1px solid #ccc"
   },
   button: {
     width: "100%",
@@ -160,19 +168,19 @@ const styles = {
     color: "#fff",
     border: "none",
     borderRadius: "5px",
-    fontWeight: "bold",
+    fontWeight: "bold"
   },
   error: {
     color: "red",
     fontSize: "14px",
-    marginBottom: "10px",
+    marginBottom: "10px"
   },
   link: {
     marginTop: "15px",
     color: "#2c7be5",
     cursor: "pointer",
-    fontSize: "14px",
-  },
+    fontSize: "14px"
+  }
 };
 
 export default Register;

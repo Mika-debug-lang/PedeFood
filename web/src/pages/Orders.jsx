@@ -1,98 +1,168 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect, useRef } from "react";
+import { io } from "socket.io-client";
 import CartContext from "../context/CartContext";
 import "./Cliente.css";
 
-function Orders() {
-  const { orders, cancelarPedido } = useContext(CartContext);
-  const [cancelando, setCancelando] = useState(null);
+const API_URL = import.meta.env.VITE_API_URL;
 
-  const motivos = [
-    "Preço muito alto",
-    "Prazo de entrega longo",
-    "Erro no endereço",
-    "Pedido duplicado",
-    "Mudança de ideia",
-    "Forma de pagamento incorreta",
-    "Problema no cartão",
-    "Produto errado",
-    "Quantidade incorreta",
-    "Não é mais necessário",
-    "Problema pessoal",
-    "Endereço incompleto",
-    "Encontrou mais barato",
-    "Problema técnico no app",
-    "Entrega muito cara",
-    "Demora na confirmação",
-    "Outro motivo"
-  ];
+function Orders() {
+  const {
+    orders,
+    cancelarPedido,
+    notificacao,
+    limparFinalizados
+  } = useContext(CartContext);
+
+  const [cancelando, setCancelando] = useState(null);
+  const socketRef = useRef(null);
+
+  /* ================= SOCKET ================= */
+
+  useEffect(() => {
+    if (!API_URL) return;
+
+    socketRef.current = io(API_URL);
+
+    socketRef.current.on("pedidoAtualizado", (pedidoAtualizado) => {
+      console.log("Pedido atualizado:", pedidoAtualizado);
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  /* ================= FORMATAR STATUS ================= */
+
+  const formatarStatus = (status) =>
+    status.replaceAll("_", " ");
+
+  /* ================= FILTRO PARA LIMPAR ================= */
+
+  const temFinalizados = orders.some(
+    (o) => o.status === "cancelado" || o.status === "entregue"
+  );
 
   return (
     <div className="pagina">
-      <h2>📦 Meus Pedidos</h2>
 
-      {orders.length === 0 ? (
-        <p>Nenhum pedido realizado.</p>
-      ) : (
-        <div className="orders-grid">
-          {orders
-            .sort((a, b) => a.criadoEm - b.criadoEm)
-            .map((order, index) => (
-              <div key={order.id} className="order-card">
-                <h3>Pedido #{index + 1}</h3>
-
-                <p><strong>Cliente:</strong> {order.cliente}</p>
-                <p>Status: {order.status}</p>
-                <p>Pagamento: {order.pagamento}</p>
-                <p>Entrega: {order.entrega}</p>
-                <p>Frete: R$ {order.frete.toFixed(2)}</p>
-                <p>Total: R$ {order.total.toFixed(2)}</p>
-
-                <p>
-                  Tempo:{" "}
-                  {Math.floor(
-                    (new Date() - new Date(order.criadoEm)) / 1000
-                  )} segundos atrás
-                </p>
-
-                {order.status === "cancelado" && (
-                  <p><strong>Motivo:</strong> {order.motivo}</p>
-                )}
-
-                {order.status === "pendente" && (
-                  <button
-                    className="cancelar-btn"
-                    onClick={() => setCancelando(order.id)}
-                  >
-                    Cancelar
-                  </button>
-                )}
-              </div>
-            ))}
+      {/* NOTIFICAÇÃO */}
+      {notificacao && (
+        <div className="popup-container">
+          <div className="popup">{notificacao}</div>
         </div>
       )}
 
-      {cancelando && (
-        <div className="modal-bg">
-          <div className="modal">
-            <h3>Motivo do Cancelamento</h3>
-            {motivos.map((m, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  cancelarPedido(cancelando, m);
-                  setCancelando(null);
-                }}
-              >
-                {m}
-              </button>
-            ))}
-            <button
-              className="fechar"
-              onClick={() => setCancelando(null)}
-            >
-              Fechar
-            </button>
-          </div>
+      {/* TÍTULO */}
+      <div className="titulo-container">
+        <img
+          src="/Images/caixa.png"
+          alt="Pedidos"
+          className="titulo-img"
+        />
+        <h2 className="titulo-pedidos">
+          Meus Pedidos
+        </h2>
+      </div>
+
+      {/* BOTÃO LIMPAR FINALIZADOS */}
+      {temFinalizados && (
+        <div className="limpar-container">
+          <button
+            className="limpar-finalizados-btn"
+            onClick={limparFinalizados}
+          >
+            🧹 Limpar pedidos finalizados
+          </button>
+        </div>
+      )}
+
+      {/* SEM PEDIDOS */}
+      {orders.length === 0 ? (
+        <p className="sem-pedidos">Nenhum pedido realizado.</p>
+      ) : (
+        <div className="orders-grid">
+          {orders.map((order, index) => (
+            <div key={order.id} className="order-card">
+
+              {/* HEADER */}
+              <div className="order-top">
+                <h3>Pedido #{index + 1}</h3>
+                <span className={`status-badge ${order.status}`}>
+                  {formatarStatus(order.status)}
+                </span>
+              </div>
+
+              {/* TOTAL */}
+              <div className="order-body">
+                <p className="total-geral">
+                  Total: R$ {order.total.toFixed(2)}
+                </p>
+              </div>
+
+              {/* TIMELINE */}
+              <div className="timeline">
+
+                <div className={`step ${
+                  order.status !== "cancelado" ? "active" : ""
+                }`}>
+                  Pedido feito
+                </div>
+
+                <div className={`step ${
+                  ["em_preparo","saiu_entrega","entregue"].includes(order.status)
+                    ? "active"
+                    : ""
+                }`}>
+                  Em preparo
+                </div>
+
+                <div className={`step ${
+                  ["saiu_entrega","entregue"].includes(order.status)
+                    ? "active"
+                    : ""
+                }`}>
+                  Saiu
+                </div>
+
+                <div className={`step ${
+                  order.status === "entregue"
+                    ? "active"
+                    : ""
+                }`}>
+                  Entregue
+                </div>
+
+              </div>
+
+              {/* CANCELAMENTO */}
+              {order.status === "pendente" && (
+                <div className="cancelamento-area">
+                  {cancelando !== order.id ? (
+                    <button
+                      className="cancelar-btn"
+                      onClick={() => setCancelando(order.id)}
+                    >
+                      Cancelar Pedido
+                    </button>
+                  ) : (
+                    <button
+                      className="confirmar-cancelamento"
+                      onClick={() => {
+                        cancelarPedido(order.id, "Cancelado pelo cliente");
+                        setCancelando(null);
+                      }}
+                    >
+                      Confirmar Cancelamento
+                    </button>
+                  )}
+                </div>
+              )}
+
+            </div>
+          ))}
         </div>
       )}
     </div>
