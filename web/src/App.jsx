@@ -1,5 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+import { Routes, Route, Navigate } from "react-router-dom";
 import PrivateRoute from "./components/PrivateRoute";
 
 import Cliente from "./pages/Cliente";
@@ -20,100 +19,118 @@ import Orders from "./pages/Orders";
 import GerenciarLoja from "./pages/GerenciarLoja";
 import EditarLoja from "./pages/EditarLoja";
 
+/* ================= REDIRECIONAMENTO INTELIGENTE ================= */
+
+import { useContext } from "react";
+import AuthContext from "./context/AuthContext";
+
+function RootRedirect() {
+  const { user, loading } = useContext(AuthContext);
+
+  if (loading) return null;
+
+  if (!user) return <Navigate to="/login" replace />;
+
+  switch (user.tipo) {
+    case "cliente":
+      return <Navigate to="/cliente" replace />;
+    case "dono":
+      return <Navigate to="/dono" replace />;
+    case "motoboy":
+      return <Navigate to="/motoboy" replace />;
+    case "admin":
+      return <Navigate to="/admin" replace />;
+    default:
+      return <Navigate to="/login" replace />;
+  }
+}
+
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
+    <Routes>
 
-          {/* ================= PÚBLICAS ================= */}
+      {/* ================= ROOT ================= */}
+      <Route path="/" element={<RootRedirect />} />
 
-          <Route path="/" element={<Navigate to="/login" />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot" element={<ForgotPassword />} />
+      {/* ================= PÚBLICAS ================= */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot" element={<ForgotPassword />} />
 
-          {/* ================= CLIENTE ================= */}
+      {/* ================= CLIENTE ================= */}
+      <Route
+        path="/cliente"
+        element={
+          <PrivateRoute allowed="cliente">
+            <Cliente />
+          </PrivateRoute>
+        }
+      >
+        <Route index element={<Lojas />} />
+        <Route path="checkout" element={<Checkout />} />
+        <Route path="orders" element={<Orders />} />
+      </Route>
 
-          <Route
-            path="/cliente"
-            element={
-              <PrivateRoute allowed="cliente">
-                <Cliente />
-              </PrivateRoute>
-            }
-          >
-            <Route index element={<Lojas />} />
-            <Route path="checkout" element={<Checkout />} />
-            <Route path="orders" element={<Orders />} />
-          </Route>
+      {/* ================= DONO ================= */}
+      <Route
+        path="/dono"
+        element={
+          <PrivateRoute allowed="dono">
+            <Dono />
+          </PrivateRoute>
+        }
+      />
 
-          {/* ================= DONO ================= */}
+      <Route
+        path="/dono/loja/:id"
+        element={
+          <PrivateRoute allowed="dono">
+            <GerenciarLoja />
+          </PrivateRoute>
+        }
+      />
 
-          <Route
-            path="/dono"
-            element={
-              <PrivateRoute allowed="dono">
-                <Dono />
-              </PrivateRoute>
-            }
-          />
+      <Route
+        path="/dono/editar/:id"
+        element={
+          <PrivateRoute allowed="dono">
+            <EditarLoja />
+          </PrivateRoute>
+        }
+      />
 
-          <Route
-            path="/dono/loja/:id"
-            element={
-              <PrivateRoute allowed="dono">
-                <GerenciarLoja />
-              </PrivateRoute>
-            }
-          />
+      {/* ================= MOTOBOY ================= */}
+      <Route
+        path="/motoboy"
+        element={
+          <PrivateRoute allowed="motoboy">
+            <Motoboy />
+          </PrivateRoute>
+        }
+      />
 
-          <Route
-            path="/dono/editar/:id"
-            element={
-              <PrivateRoute allowed="dono">
-                <EditarLoja />
-              </PrivateRoute>
-            }
-          />
+      {/* ================= ADMIN ================= */}
+      <Route
+        path="/admin"
+        element={
+          <PrivateRoute allowed="admin">
+            <Admin />
+          </PrivateRoute>
+        }
+      />
 
-          {/* ================= MOTOBOY ================= */}
+      {/* ================= 404 ================= */}
+      <Route
+        path="*"
+        element={
+          <div style={{ padding: 40, textAlign: "center" }}>
+            <h1>404</h1>
+            <p>Página não encontrada</p>
+          </div>
+        }
+      />
 
-          <Route
-            path="/motoboy"
-            element={
-              <PrivateRoute allowed="motoboy">
-                <Motoboy />
-              </PrivateRoute>
-            }
-          />
-
-          {/* ================= ADMIN ================= */}
-
-          <Route
-            path="/admin"
-            element={
-              <PrivateRoute allowed="admin">
-                <Admin />
-              </PrivateRoute>
-            }
-          />
-
-          {/* ================= 404 ================= */}
-
-          <Route
-            path="*"
-            element={
-              <div style={{ padding: 40, textAlign: "center" }}>
-                <h1>404</h1>
-                <p>Página não encontrada</p>
-              </div>
-            }
-          />
-
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    </Routes>
   );
 }
 

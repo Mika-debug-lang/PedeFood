@@ -9,7 +9,7 @@ const API_URL =
   "https://pedefood.onrender.com";
 
 function Dono() {
-  const { user } = useContext(AuthContext);
+  const { user, loading: authLoading } = useContext(AuthContext);
   const { orders = [], atualizarStatus } = useContext(CartContext) || {};
   const navigate = useNavigate();
 
@@ -21,30 +21,37 @@ function Dono() {
   const [preview, setPreview] = useState(null);
   const [mensagem, setMensagem] = useState("");
   const [loading, setLoading] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
 
   const fileInputRef = useRef();
 
-  /* ================= PROTEÇÃO ================= */
+  /* ================= PROTEÇÃO DE ROTA ================= */
 
   useEffect(() => {
-    if (!user) {
-      navigate("/");
-      return;
+    if (!authLoading) {
+      if (!user) {
+        navigate("/login");
+      } else if (user.tipo !== "dono") {
+        switch (user.tipo) {
+          case "cliente":
+            navigate("/cliente");
+            break;
+          case "admin":
+            navigate("/admin");
+            break;
+          case "motoboy":
+            navigate("/motoboy");
+            break;
+          default:
+            navigate("/login");
+        }
+      }
     }
-
-    if (!user.tipo || user.tipo !== "dono") {
-      navigate("/cliente");
-      return;
-    }
-
-    setCheckingAuth(false);
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   /* ================= BUSCAR LOJA ================= */
 
   const buscarMinhaLoja = useCallback(async () => {
-    if (!user?.token) return;
+    if (!user?.token || user.tipo !== "dono") return;
 
     try {
       const response = await fetch(`${API_URL}/lojas/minha`, {
@@ -70,10 +77,12 @@ function Dono() {
   }, [user]);
 
   useEffect(() => {
-    buscarMinhaLoja();
-  }, [buscarMinhaLoja]);
+    if (user?.tipo === "dono") {
+      buscarMinhaLoja();
+    }
+  }, [buscarMinhaLoja, user]);
 
-  /* ================= ATUALIZAR STATUS MANUAL ================= */
+  /* ================= ATUALIZAR STATUS ================= */
 
   const atualizarStatusLoja = async () => {
     await buscarMinhaLoja();
@@ -171,7 +180,11 @@ function Dono() {
     }
   };
 
-  if (checkingAuth) return null;
+  /* ================= BLOQUEIO DE RENDER ================= */
+
+  if (authLoading || !user || user.tipo !== "dono") return null;
+
+  /* ================= RENDER ================= */
 
   return (
     <div className="dono-container">
@@ -191,38 +204,36 @@ function Dono() {
         <div className="criar-loja-box">
           <h2>Sua Loja</h2>
 
-          <div style={{ marginBottom: 25 }}>
-            <img
-              src={minhaLoja.imagem}
-              alt={minhaLoja.nome}
-              style={{
-                width: 220,
-                borderRadius: 16,
-                marginBottom: 15,
-              }}
-            />
+          <img
+            src={minhaLoja.imagem}
+            alt={minhaLoja.nome}
+            style={{
+              width: 220,
+              borderRadius: 16,
+              marginBottom: 15,
+            }}
+          />
 
-            <h3>{minhaLoja.nome}</h3>
-            <p>{minhaLoja.descricao}</p>
+          <h3>{minhaLoja.nome}</h3>
+          <p>{minhaLoja.descricao}</p>
 
-            <span className={`status-badge ${minhaLoja.status}`}>
-              Status: {minhaLoja.status}
-            </span>
+          <span className={`status-badge ${minhaLoja.status}`}>
+            Status: {minhaLoja.status}
+          </span>
 
-            {minhaLoja.status === "pendente" && (
-              <p style={{ color: "orange", marginTop: 10 }}>
-                Sua loja está aguardando aprovação do administrador.
-              </p>
-            )}
+          {minhaLoja.status === "pendente" && (
+            <p style={{ color: "orange", marginTop: 10 }}>
+              Sua loja está aguardando aprovação do administrador.
+            </p>
+          )}
 
-            <button
-              className="button_atualizar"
-              onClick={atualizarStatusLoja}
-              style={{ marginTop: 10 }}
-            >
-              Atualizar Status
-            </button>
-          </div>
+          <button
+            className="button_atualizar"
+            onClick={atualizarStatusLoja}
+            style={{ marginTop: 10 }}
+          >
+            Atualizar Status
+          </button>
 
           <div className="loja-actions">
             <button
@@ -264,25 +275,19 @@ function Dono() {
               type="text"
               placeholder="Nome da Loja"
               value={nomeLoja}
-              onChange={(e) =>
-                setNomeLoja(e.target.value)
-              }
+              onChange={(e) => setNomeLoja(e.target.value)}
             />
 
             <input
               type="text"
               placeholder="Categoria"
               value={categoria}
-              onChange={(e) =>
-                setCategoria(e.target.value)
-              }
+              onChange={(e) => setCategoria(e.target.value)}
             />
 
             <div
               className="upload-card"
-              onClick={() =>
-                fileInputRef.current.click()
-              }
+              onClick={() => fileInputRef.current.click()}
             >
               {preview ? (
                 <img src={preview} alt="Preview" />
@@ -316,6 +321,8 @@ function Dono() {
         </div>
       )}
 
+      {/* ================= PEDIDOS ================= */}
+
       <div style={{ marginTop: 60 }}>
         <h2>Pedidos Recebidos</h2>
 
@@ -330,10 +337,7 @@ function Dono() {
               const id = order._id || order.id;
 
               return (
-                <div
-                  key={id || index}
-                  className="dono-card"
-                >
+                <div key={id || index} className="dono-card">
                   <div className="pedido-top">
                     <h3>Pedido #{index + 1}</h3>
                     <span className={`status-badge ${status}`}>

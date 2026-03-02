@@ -5,24 +5,42 @@ import AuthContext from "../context/AuthContext";
 function PrivateRoute({ children, allowed }) {
   const { user, loading } = useContext(AuthContext);
 
-  // 🔄 Enquanto estiver carregando o user do localStorage
+  // ⏳ Enquanto verifica login
   if (loading) {
-    return null; // ou pode colocar um spinner
+    return null; // pode trocar por spinner
   }
 
   // 🚫 Não logado
   if (!user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   // 🚫 Sem tipo definido
   if (!user.tipo) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
-  // 🚫 Tipo diferente do permitido
-  if (allowed && user.tipo !== allowed) {
-    return <Navigate to="/" replace />;
+  // 🔎 Se houver regra de permissão
+  if (allowed) {
+    const allowedRoles = Array.isArray(allowed)
+      ? allowed
+      : [allowed];
+
+    if (!allowedRoles.includes(user.tipo)) {
+      // 🔁 Redireciona para área correta
+      switch (user.tipo) {
+        case "cliente":
+          return <Navigate to="/cliente" replace />;
+        case "dono":
+          return <Navigate to="/dono" replace />;
+        case "motoboy":
+          return <Navigate to="/motoboy" replace />;
+        case "admin":
+          return <Navigate to="/admin" replace />;
+        default:
+          return <Navigate to="/login" replace />;
+      }
+    }
   }
 
   return children;

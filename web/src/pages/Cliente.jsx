@@ -8,22 +8,38 @@ function Cliente() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/");
+    if (!loading) {
+      if (!user) {
+        navigate("/login");
+      } else if (user.tipo !== "cliente") {
+        // redireciona para a área correta
+        switch (user.tipo) {
+          case "dono":
+            navigate("/dono");
+            break;
+          case "motoboy":
+            navigate("/motoboy");
+            break;
+          case "admin":
+            navigate("/admin");
+            break;
+          default:
+            navigate("/login");
+        }
+      }
     }
   }, [user, loading, navigate]);
 
   const sair = () => {
     logout();
-    navigate("/");
+    navigate("/login");
   };
 
   if (loading) return null;
-  if (!user) return null;
+  if (!user || user.tipo !== "cliente") return null;
 
   return (
     <div className="cliente-container">
-
       <nav className="navbar">
         <div className="logo">PedeFood Express</div>
 
@@ -36,11 +52,9 @@ function Cliente() {
           <li>
             <Link to="">Lojas</Link>
           </li>
-
           <li>
             <Link to="checkout">Checkout</Link>
           </li>
-
           <li>
             <Link to="orders">Pedidos</Link>
           </li>
@@ -63,7 +77,6 @@ function Cliente() {
       <div className="conteudo">
         <Outlet />
       </div>
-
     </div>
   );
 }

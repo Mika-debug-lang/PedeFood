@@ -1,9 +1,11 @@
 import { useEffect, useState, useContext, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
 import "./Admin.css";
 
 function Admin() {
-  const { user } = useContext(AuthContext);
+  const { user, loading: authLoading } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const [pendentes, setPendentes] = useState([]);
   const [ativas, setAtivas] = useState([]);
@@ -12,10 +14,34 @@ function Admin() {
   const API_URL =
     import.meta.env.VITE_API_URL || "https://pedefood.onrender.com";
 
+  /* ================= PROTEÇÃO DE ROTA ================= */
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        navigate("/login");
+      } else if (user.tipo !== "admin") {
+        switch (user.tipo) {
+          case "cliente":
+            navigate("/cliente");
+            break;
+          case "dono":
+            navigate("/dono");
+            break;
+          case "motoboy":
+            navigate("/motoboy");
+            break;
+          default:
+            navigate("/login");
+        }
+      }
+    }
+  }, [user, authLoading, navigate]);
+
   /* ================= FUNÇÃO PRINCIPAL ================= */
 
   const buscarLojas = useCallback(async () => {
-    if (!user?.token) return;
+    if (!user?.token || user.tipo !== "admin") return;
 
     try {
       setLoading(true);
@@ -34,15 +60,11 @@ function Admin() {
       }
 
       const lojasPendentes = data.filter(
-        (l) =>
-          l.status &&
-          l.status.toLowerCase() === "pendente"
+        (l) => l.status && l.status.toLowerCase() === "pendente"
       );
 
       const lojasAtivas = data.filter(
-        (l) =>
-          l.status &&
-          l.status.toLowerCase() === "aprovada"
+        (l) => l.status && l.status.toLowerCase() === "aprovada"
       );
 
       setPendentes(lojasPendentes);
@@ -56,8 +78,10 @@ function Admin() {
   }, [API_URL, user]);
 
   useEffect(() => {
-    buscarLojas();
-  }, [buscarLojas]);
+    if (user?.tipo === "admin") {
+      buscarLojas();
+    }
+  }, [buscarLojas, user]);
 
   /* ================= APROVAR ================= */
 
@@ -97,6 +121,10 @@ function Admin() {
     }
   };
 
+  /* ================= BLOQUEIO DE RENDER ================= */
+
+  if (authLoading || !user || user.tipo !== "admin") return null;
+
   /* ================= RENDER ================= */
 
   return (
@@ -113,7 +141,6 @@ function Admin() {
 
       {!loading && (
         <>
-          {/* ================= PENDENTES ================= */}
           <section className="admin-section">
             <h2>
               Lojas Pendentes
@@ -167,7 +194,6 @@ function Admin() {
             )}
           </section>
 
-          {/* ================= ATIVAS ================= */}
           <section className="admin-section">
             <h2>
               Lojas Ativas
