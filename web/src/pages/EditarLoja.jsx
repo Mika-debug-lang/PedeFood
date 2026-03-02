@@ -5,7 +5,7 @@ import "./EditarLoja.css";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  "http://localhost:10000";
+  "https://pedefood.onrender.com";
 
 function EditarLoja() {
   const { id } = useParams();

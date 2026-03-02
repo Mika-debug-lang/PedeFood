@@ -10,7 +10,7 @@ function Admin() {
   const [loading, setLoading] = useState(true);
 
   const API_URL =
-    import.meta.env.VITE_API_URL || "http://localhost:10000";
+    import.meta.env.VITE_API_URL || "https://pedefood.onrender.com";
 
   /* ================= FUNÇÃO PRINCIPAL ================= */
 

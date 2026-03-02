@@ -6,7 +6,7 @@ import "./Dono.css";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  "http://localhost:10000";
+  "https://pedefood.onrender.com";
 
 function Dono() {
   const { user } = useContext(AuthContext);
@@ -215,7 +215,8 @@ function Dono() {
               </p>
             )}
 
-            <button className="button_atualizar"
+            <button
+              className="button_atualizar"
               onClick={atualizarStatusLoja}
               style={{ marginTop: 10 }}
             >
@@ -314,8 +315,6 @@ function Dono() {
           </form>
         </div>
       )}
-
-      {/* ================= PEDIDOS ================= */}
 
       <div style={{ marginTop: 60 }}>
         <h2>Pedidos Recebidos</h2>

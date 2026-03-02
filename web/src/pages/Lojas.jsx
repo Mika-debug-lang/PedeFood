@@ -7,14 +7,14 @@ function Lojas() {
 
   const [lojasBackend, setLojasBackend] = useState([]);
   const [lojaSelecionada, setLojaSelecionada] = useState(null);
-  const [produtos, setProdutos] = useState([]); // 🔥 NOVO
+  const [produtos, setProdutos] = useState([]);
   const [loadingProdutos, setLoadingProdutos] = useState(false);
 
   const [notificacoes, setNotificacoes] = useState([]);
   const idRef = useRef(0);
 
   const API_URL =
-    import.meta.env.VITE_API_URL || "http://localhost:10000";
+    import.meta.env.VITE_API_URL || "https://pedefood.onrender.com";
 
   /* ================= BUSCAR LOJAS ATIVAS ================= */
 
