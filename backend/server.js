@@ -11,8 +11,25 @@ const Produto = require("./models/Produto");
 
 const app = express();
 
+/* ================= CORS PRODUÇÃO ================= */
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://pede-food.vercel.app",
+    ],
+    credentials: true,
+  })
+);
+
 app.use(express.json({ limit: "10mb" }));
-app.use(cors({ origin: true, credentials: true }));
+
+/* ================= ROTA RAIZ ================= */
+
+app.get("/", (req, res) => {
+  res.json({ mensagem: "API funcionando 🚀" });
+});
 
 /* ================= VALIDAÇÕES ENV ================= */
 
@@ -33,7 +50,7 @@ mongoose
     process.exit(1);
   });
 
-/* ================= MODELS INTERNOS ================= */
+/* ================= MODELS ================= */
 
 const usuarioSchema = new mongoose.Schema(
   {
@@ -59,7 +76,6 @@ function autenticarToken(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 🔥 GARANTE ID COMO STRING
     req.usuario = {
       id: decoded.id?.toString(),
       roles: decoded.roles || [],
@@ -112,7 +128,7 @@ app.post("/register", async (req, res) => {
 
     const senhaHash = await bcrypt.hash(senha, 10);
 
-    const novoUsuario = await Usuario.create({
+    await Usuario.create({
       nome,
       email: emailNormalizado,
       senha: senhaHash,
@@ -182,143 +198,19 @@ app.post("/login", async (req, res) => {
 
 /* ================= LOJAS ================= */
 
+app.get("/lojas", async (req, res) => {
+  const lojas = await Loja.find().sort({ createdAt: -1 });
+  res.json(lojas);
+});
+
 app.get("/lojas/ativas", async (req, res) => {
   const lojas = await Loja.find({ status: "aprovada" }).sort({
     createdAt: -1,
   });
-
   res.json(lojas);
 });
 
-app.get(
-  "/lojas/minha",
-  autenticarToken,
-  autorizarRoles(["dono"]),
-  async (req, res) => {
-    const loja = await Loja.findOne({
-      donoId: req.usuario.id,
-    });
-
-    res.json(loja || null);
-  }
-);
-
-app.get("/lojas/:id", async (req, res) => {
-  const loja = await Loja.findById(req.params.id);
-
-  if (!loja)
-    return res.status(404).json({ erro: "Loja não encontrada" });
-
-  res.json(loja);
-});
-
-app.post(
-  "/lojas",
-  autenticarToken,
-  autorizarRoles(["dono"]),
-  async (req, res) => {
-    const { nome, descricao, imagem, categoria } = req.body;
-
-    if (!nome || !descricao || !imagem || !categoria)
-      return res.status(400).json({ erro: "Campos obrigatórios" });
-
-    const novaLoja = await Loja.create({
-      nome: nome.trim(),
-      descricao: descricao.trim(),
-      imagem,
-      categoria: categoria.toLowerCase().trim(),
-      donoId: req.usuario.id,
-      status: "pendente",
-    });
-
-    res.status(201).json(novaLoja);
-  }
-);
-
-/* 🔥 PUT CORRIGIDO E SEGURO */
-app.put(
-  "/lojas/:id",
-  autenticarToken,
-  autorizarRoles(["dono"]),
-  async (req, res) => {
-    const loja = await Loja.findById(req.params.id);
-
-    if (!loja)
-      return res.status(404).json({ erro: "Loja não encontrada" });
-
-    if (loja.donoId.toString() !== req.usuario.id)
-      return res.status(403).json({ erro: "Não autorizado" });
-
-    const { nome, descricao, categoria, imagem } = req.body;
-
-    if (!nome || !descricao || !categoria)
-      return res.status(400).json({ erro: "Campos obrigatórios" });
-
-    loja.nome = nome.trim();
-    loja.descricao = descricao.trim();
-    loja.categoria = categoria.toLowerCase().trim();
-    loja.imagem = imagem || loja.imagem;
-
-    await loja.save();
-
-    res.json(loja);
-  }
-);
-
-app.delete(
-  "/lojas/:id",
-  autenticarToken,
-  autorizarRoles(["admin", "dono"]),
-  async (req, res) => {
-    const loja = await Loja.findById(req.params.id);
-
-    if (!loja)
-      return res.status(404).json({ erro: "Loja não encontrada" });
-
-    if (
-      req.usuario.roles.includes("dono") &&
-      loja.donoId.toString() !== req.usuario.id
-    )
-      return res.status(403).json({ erro: "Não autorizado" });
-
-    await Produto.deleteMany({ lojaId: req.params.id });
-    await Loja.findByIdAndDelete(req.params.id);
-
-    res.json({ mensagem: "Loja deletada com sucesso" });
-  }
-);
-
 /* ================= PRODUTOS ================= */
-
-app.post(
-  "/produtos",
-  autenticarToken,
-  autorizarRoles(["dono"]),
-  async (req, res) => {
-    const { nome, descricao, preco, imagem, lojaId } = req.body;
-
-    if (!nome || !preco || !lojaId)
-      return res.status(400).json({ erro: "Campos obrigatórios" });
-
-    const loja = await Loja.findById(lojaId);
-
-    if (!loja)
-      return res.status(404).json({ erro: "Loja não encontrada" });
-
-    if (loja.donoId.toString() !== req.usuario.id)
-      return res.status(403).json({ erro: "Não autorizado" });
-
-    const produto = await Produto.create({
-      nome: nome.trim(),
-      descricao: descricao?.trim() || "",
-      preco,
-      imagem: imagem || "",
-      lojaId,
-    });
-
-    res.status(201).json(produto);
-  }
-);
 
 app.get("/produtos/:lojaId", async (req, res) => {
   const produtos = await Produto.find({
@@ -328,8 +220,14 @@ app.get("/produtos/:lojaId", async (req, res) => {
   res.json(produtos);
 });
 
+/* ================= 404 GLOBAL ================= */
+
+app.use((req, res) => {
+  res.status(404).json({ erro: "Rota não encontrada" });
+});
+
 /* ================= START ================= */
 
 app.listen(process.env.PORT || 10000, () =>
-  console.log("Servidor rodando")
+  console.log("Servidor rodando 🚀")
 );
