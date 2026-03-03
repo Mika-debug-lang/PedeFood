@@ -13,7 +13,8 @@ const app = express();
 
 /* ================= CONFIG ================= */
 
-const ROLES_VALIDAS = ["cliente", "dono", "motoboy", "admin"];
+const ROLES_PUBLICAS = ["cliente", "dono", "motoboy"];
+const TODAS_ROLES = ["cliente", "dono", "motoboy", "admin"];
 
 /* ================= CORS ================= */
 
@@ -28,12 +29,6 @@ app.use(
 );
 
 app.use(express.json({ limit: "10mb" }));
-
-/* ================= ROTA RAIZ ================= */
-
-app.get("/", (req, res) => {
-  res.json({ mensagem: "API funcionando 🚀" });
-});
 
 /* ================= VALIDAÇÕES ENV ================= */
 
@@ -63,7 +58,7 @@ const usuarioSchema = new mongoose.Schema(
     senha: { type: String, required: true },
     roles: {
       type: [String],
-      enum: ROLES_VALIDAS,
+      enum: TODAS_ROLES,
       default: ["cliente"],
     },
   },
@@ -72,11 +67,10 @@ const usuarioSchema = new mongoose.Schema(
 
 const Usuario = mongoose.model("Usuario", usuarioSchema);
 
-/* ================= MIDDLEWARE AUTH ================= */
+/* ================= MIDDLEWARE ================= */
 
 function autenticarToken(req, res, next) {
   const authHeader = req.headers.authorization;
-
   if (!authHeader)
     return res.status(401).json({ erro: "Token não fornecido" });
 
@@ -91,7 +85,7 @@ function autenticarToken(req, res, next) {
     };
 
     next();
-  } catch (err) {
+  } catch {
     return res.status(403).json({ erro: "Token inválido" });
   }
 }
@@ -118,7 +112,7 @@ app.post("/register", async (req, res) => {
     if (!nome || !email || !senha || !tipo)
       return res.status(400).json({ erro: "Preencha todos os campos" });
 
-    if (!ROLES_VALIDAS.includes(tipo) || tipo === "admin")
+    if (!ROLES_PUBLICAS.includes(tipo))
       return res.status(400).json({ erro: "Tipo inválido" });
 
     const emailNormalizado = email.trim().toLowerCase();
@@ -129,7 +123,7 @@ app.post("/register", async (req, res) => {
       if (usuario.roles.includes(tipo))
         return res
           .status(400)
-          .json({ erro: `Usuário já possui permissão '${tipo}'` });
+          .json({ erro: `Usuário já possui '${tipo}'` });
 
       usuario.roles.push(tipo);
       await usuario.save();
@@ -168,11 +162,13 @@ app.post("/login", async (req, res) => {
     if (!email || !senha || !tipo)
       return res.status(400).json({ erro: "Campos obrigatórios" });
 
-    if (!ROLES_VALIDAS.includes(tipo))
+    const tipoNormalizado = tipo.toLowerCase();
+
+    if (!TODAS_ROLES.includes(tipoNormalizado))
       return res.status(400).json({ erro: "Tipo inválido" });
 
     const usuario = await Usuario.findOne({
-      email: email.toLowerCase(),
+      email: email.trim().toLowerCase(),
     });
 
     if (!usuario)
@@ -186,8 +182,7 @@ app.post("/login", async (req, res) => {
     if (!senhaValida)
       return res.status(401).json({ erro: "Senha incorreta" });
 
-    /* ================= ADMIN AUTOMÁTICO ================= */
-
+    // ADMIN AUTOMÁTICO
     if (usuario.email === process.env.ADMIN_EMAIL) {
       if (!usuario.roles.includes("admin")) {
         usuario.roles.push("admin");
@@ -195,7 +190,9 @@ app.post("/login", async (req, res) => {
       }
     }
 
-    if (!usuario.roles.includes(tipo))
+    const isAdmin = usuario.roles.includes("admin");
+
+    if (!isAdmin && !usuario.roles.includes(tipoNormalizado))
       return res
         .status(403)
         .json({ erro: "Acesso negado para essa área" });
@@ -212,10 +209,11 @@ app.post("/login", async (req, res) => {
     res.json({
       nome: usuario.nome,
       email: usuario.email,
-      tipo,
+      tipo: tipoNormalizado,
       roles: usuario.roles,
       token,
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ erro: "Erro interno" });
@@ -224,17 +222,100 @@ app.post("/login", async (req, res) => {
 
 /* ================= LOJAS ================= */
 
-app.get("/lojas", async (req, res) => {
-  const lojas = await Loja.find().sort({ createdAt: -1 });
-  res.json(lojas);
+/* ADMIN - ver todas */
+app.get(
+  "/lojas",
+  autenticarToken,
+  autorizarRoles(["admin"]),
+  async (req, res) => {
+    const lojas = await Loja.find().sort({ createdAt: -1 });
+    res.json(lojas);
+  }
+);
+
+/* CLIENTE - ver ativas */
+app.get("/lojas/ativas", async (req, res) => {
+  try {
+    const lojas = await Loja.find({ status: "aprovada" })
+      .sort({ createdAt: -1 });
+
+    res.json(lojas);
+  } catch (err) {
+    res.status(500).json({ erro: "Erro ao buscar lojas ativas" });
+  }
 });
 
-app.get("/lojas/ativas", async (req, res) => {
-  const lojas = await Loja.find({ status: "aprovada" }).sort({
-    createdAt: -1,
-  });
-  res.json(lojas);
-});
+/* DONO - ver minha loja */
+app.get(
+  "/lojas/minha",
+  autenticarToken,
+  autorizarRoles(["dono"]),
+  async (req, res) => {
+    const loja = await Loja.findOne({ donoId: req.usuario.id });
+
+    if (!loja)
+      return res.status(404).json({ erro: "Loja não encontrada" });
+
+    res.json(loja);
+  }
+);
+
+/* DONO - criar loja */
+app.post(
+  "/lojas",
+  autenticarToken,
+  autorizarRoles(["dono"]),
+  async (req, res) => {
+    const { nome, descricao, imagem, categoria } = req.body;
+
+    const novaLoja = await Loja.create({
+      nome,
+      descricao,
+      imagem,
+      categoria,
+      status: "pendente",
+      donoId: req.usuario.id,
+    });
+
+    res.status(201).json(novaLoja);
+  }
+);
+
+/* ADMIN - aprovar loja */
+app.put(
+  "/lojas/:id/aprovar",
+  autenticarToken,
+  autorizarRoles(["admin"]),
+  async (req, res) => {
+    await Loja.findByIdAndUpdate(req.params.id, {
+      status: "aprovada",
+    });
+
+    res.json({ mensagem: "Loja aprovada" });
+  }
+);
+
+/* ADMIN ou DONO - deletar loja */
+app.delete(
+  "/lojas/:id",
+  autenticarToken,
+  async (req, res) => {
+    const loja = await Loja.findById(req.params.id);
+
+    if (!loja)
+      return res.status(404).json({ erro: "Loja não encontrada" });
+
+    const isAdmin = req.usuario.roles.includes("admin");
+    const isDono = loja.donoId?.toString() === req.usuario.id;
+
+    if (!isAdmin && !isDono)
+      return res.status(403).json({ erro: "Acesso negado" });
+
+    await loja.deleteOne();
+
+    res.json({ mensagem: "Loja excluída" });
+  }
+);
 
 /* ================= PRODUTOS ================= */
 
@@ -246,7 +327,7 @@ app.get("/produtos/:lojaId", async (req, res) => {
   res.json(produtos);
 });
 
-/* ================= 404 GLOBAL ================= */
+/* ================= 404 ================= */
 
 app.use((req, res) => {
   res.status(404).json({ erro: "Rota não encontrada" });

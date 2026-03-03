@@ -19,6 +19,12 @@ function Login() {
   const entrar = async (e) => {
     e.preventDefault();
     setErro("");
+
+    if (!email.trim() || !senha.trim()) {
+      setErro("Preencha todos os campos");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -26,41 +32,39 @@ function Login() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
+          email: email.trim().toLowerCase(),
           senha,
           tipo: area
         })
       });
 
-      let data;
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error("Resposta inválida do servidor");
-      }
+      const data = await response.json();
 
       if (!response.ok) {
         setErro(data?.erro || "Erro ao fazer login");
-        setLoading(false);
         return;
       }
 
-      if (!data.tipo) {
-        setErro("Tipo de usuário não retornado pelo servidor.");
-        setLoading(false);
+      if (!data.token || !data.roles) {
+        setErro("Erro inesperado no login.");
         return;
       }
 
-      // 🔐 salva usuário autenticado
+      // 🔐 Salva usuário autenticado
       login({
         nome: data.nome,
         email: data.email,
         tipo: data.tipo,
+        roles: data.roles,
         token: data.token
       });
 
-      // 🚀 redireciona baseado no tipo REAL vindo do backend
-      navigate(`/${data.tipo}`);
+      // 🔥 PRIORIDADE TOTAL PARA ADMIN
+      if (data.roles.includes("admin")) {
+        navigate("/admin");
+      } else {
+        navigate(`/${data.tipo}`);
+      }
 
     } catch (err) {
       console.error("Erro no login:", err);
@@ -76,7 +80,7 @@ function Login() {
 
         <h2 className="login-title">Bem-vindo</h2>
         <p className="login-subtitle">
-          Escolha a área e faça login
+          Escolha sua área e faça login
         </p>
 
         {erro && <div className="login-error">{erro}</div>}
@@ -87,7 +91,7 @@ function Login() {
             type="email"
             placeholder="Digite seu email"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
 
@@ -95,7 +99,7 @@ function Login() {
             type="password"
             placeholder="Digite sua senha"
             value={senha}
-            onChange={e => setSenha(e.target.value)}
+            onChange={(e) => setSenha(e.target.value)}
             required
           />
 
@@ -107,9 +111,6 @@ function Login() {
             <option value="cliente">Área do Cliente</option>
             <option value="dono">Área do Dono</option>
             <option value="motoboy">Área do Motoboy</option>
-
-            {/* 🔥 ADMIN PARA TESTE */}
-            <option value="admin">Área Administrativa</option>
           </select>
 
           <button type="submit" disabled={loading}>

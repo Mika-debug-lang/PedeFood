@@ -4,7 +4,7 @@ import AuthContext from "../context/AuthContext";
 import "./Admin.css";
 
 function Admin() {
-  const { user, loading: authLoading } = useContext(AuthContext);
+  const { user, loading: authLoading, trocarTipo } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [pendentes, setPendentes] = useState([]);
@@ -14,34 +14,19 @@ function Admin() {
   const API_URL =
     import.meta.env.VITE_API_URL || "https://pedefood.onrender.com";
 
-  /* ================= PROTEÇÃO DE ROTA ================= */
+  /* ================= PROTEÇÃO ================= */
 
   useEffect(() => {
     if (!authLoading) {
-      if (!user) {
-        navigate("/login");
-      } else if (user.tipo !== "admin") {
-        switch (user.tipo) {
-          case "cliente":
-            navigate("/cliente");
-            break;
-          case "dono":
-            navigate("/dono");
-            break;
-          case "motoboy":
-            navigate("/motoboy");
-            break;
-          default:
-            navigate("/login");
-        }
-      }
+      if (!user) navigate("/login");
+      else if (!user.roles?.includes("admin")) navigate("/");
     }
   }, [user, authLoading, navigate]);
 
-  /* ================= FUNÇÃO PRINCIPAL ================= */
+  /* ================= BUSCAR LOJAS ================= */
 
   const buscarLojas = useCallback(async () => {
-    if (!user?.token || user.tipo !== "admin") return;
+    if (!user?.token) return;
 
     try {
       setLoading(true);
@@ -53,194 +38,138 @@ function Admin() {
       });
 
       const data = await resp.json();
+      if (!resp.ok) return;
 
-      if (!resp.ok) {
-        console.error("Erro ao buscar lojas");
-        return;
-      }
-
-      const lojasPendentes = data.filter(
-        (l) => l.status && l.status.toLowerCase() === "pendente"
-      );
-
-      const lojasAtivas = data.filter(
-        (l) => l.status && l.status.toLowerCase() === "aprovada"
-      );
-
-      setPendentes(lojasPendentes);
-      setAtivas(lojasAtivas);
+      setPendentes(data.filter(l => l.status?.toLowerCase() === "pendente"));
+      setAtivas(data.filter(l => l.status?.toLowerCase() === "aprovada"));
 
     } catch (err) {
-      console.error("Erro ao buscar lojas:", err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   }, [API_URL, user]);
 
   useEffect(() => {
-    if (user?.tipo === "admin") {
-      buscarLojas();
-    }
+    if (user?.roles?.includes("admin")) buscarLojas();
   }, [buscarLojas, user]);
 
-  /* ================= APROVAR ================= */
-
   const aprovarLoja = async (id) => {
-    try {
-      await fetch(`${API_URL}/lojas/${id}/aprovar`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      });
-
-      await buscarLojas();
-
-    } catch (err) {
-      console.error("Erro ao aprovar loja:", err);
-    }
+    await fetch(`${API_URL}/lojas/${id}/aprovar`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${user.token}` },
+    });
+    buscarLojas();
   };
-
-  /* ================= DELETAR ================= */
 
   const deletarLoja = async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir esta loja?")) return;
+    if (!window.confirm("Excluir loja?")) return;
 
-    try {
-      await fetch(`${API_URL}/lojas/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      });
+    await fetch(`${API_URL}/lojas/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${user.token}` },
+    });
 
-      await buscarLojas();
-
-    } catch (err) {
-      console.error("Erro ao excluir loja:", err);
-    }
+    buscarLojas();
   };
 
-  /* ================= BLOQUEIO DE RENDER ================= */
-
-  if (authLoading || !user || user.tipo !== "admin") return null;
-
-  /* ================= RENDER ================= */
+  if (authLoading || !user?.roles?.includes("admin")) return null;
 
   return (
-    <div className="admin-container">
-      <div className="admin-header">
+    <div className="admin-layout">
+
+      {/* ================= CONTEÚDO ================= */}
+      <div className="admin-content-area">
         <h1>Painel Administrativo</h1>
-      </div>
 
-      {loading && (
-        <div className="admin-empty">
-          <p>Carregando lojas...</p>
-        </div>
-      )}
+        {loading && <p>Carregando...</p>}
 
-      {!loading && (
-        <>
-          <section className="admin-section">
-            <h2>
-              Lojas Pendentes
-              <span className="admin-count">
-                {pendentes.length}
-              </span>
-            </h2>
-
-            {pendentes.length === 0 ? (
-              <div className="admin-empty">
-                <p>Nenhuma loja aguardando aprovação.</p>
-              </div>
-            ) : (
+        {!loading && (
+          <>
+            <section>
+              <h2>Lojas Pendentes ({pendentes.length})</h2>
               <div className="admin-grid">
                 {pendentes.map((loja) => (
                   <div key={loja._id} className="admin-card">
-                    <div className="admin-image-wrapper">
-                      <img
-                        src={loja.imagem}
-                        alt={loja.nome}
-                        className="admin-img"
-                      />
-                      <span className="admin-badge pendente">
-                        Pendente
-                      </span>
-                    </div>
-
-                    <div className="admin-content">
-                      <h3>{loja.nome}</h3>
-                      <p>{loja.descricao}</p>
-
-                      <div className="admin-actions">
-                        <button
-                          className="btn-approve"
-                          onClick={() => aprovarLoja(loja._id)}
-                        >
-                          ✔ Aprovar
-                        </button>
-
-                        <button
-                          className="btn-delete"
-                          onClick={() => deletarLoja(loja._id)}
-                        >
-                          ✖ Deletar
-                        </button>
-                      </div>
+                    <img src={loja.imagem} alt={loja.nome} />
+                    <h3>{loja.nome}</h3>
+                    <p>{loja.descricao}</p>
+                    <div className="admin-actions">
+                      <button onClick={() => aprovarLoja(loja._id)}>
+                        Aprovar
+                      </button>
+                      <button
+                        className="danger"
+                        onClick={() => deletarLoja(loja._id)}
+                      >
+                        Deletar
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
-          </section>
+            </section>
 
-          <section className="admin-section">
-            <h2>
-              Lojas Ativas
-              <span className="admin-count active-count">
-                {ativas.length}
-              </span>
-            </h2>
-
-            {ativas.length === 0 ? (
-              <div className="admin-empty">
-                <p>Nenhuma loja ativa no sistema.</p>
-              </div>
-            ) : (
+            <section>
+              <h2>Lojas Ativas ({ativas.length})</h2>
               <div className="admin-grid">
                 {ativas.map((loja) => (
-                  <div key={loja._id} className="admin-card active-card">
-                    <div className="admin-image-wrapper">
-                      <img
-                        src={loja.imagem}
-                        alt={loja.nome}
-                        className="admin-img"
-                      />
-                      <span className="admin-badge ativa">
-                        Ativa
-                      </span>
-                    </div>
-
-                    <div className="admin-content">
-                      <h3>{loja.nome}</h3>
-                      <p>{loja.descricao}</p>
-
-                      <div className="admin-actions">
-                        <button
-                          className="btn-delete danger"
-                          onClick={() => deletarLoja(loja._id)}
-                        >
-                          🗑 Excluir Loja
-                        </button>
-                      </div>
-                    </div>
+                  <div key={loja._id} className="admin-card">
+                    <img src={loja.imagem} alt={loja.nome} />
+                    <h3>{loja.nome}</h3>
+                    <p>{loja.descricao}</p>
+                    <button
+                      className="danger"
+                      onClick={() => deletarLoja(loja._id)}
+                    >
+                      Excluir
+                    </button>
                   </div>
                 ))}
               </div>
-            )}
-          </section>
-        </>
-      )}
+            </section>
+          </>
+        )}
+      </div>
+
+      {/* ================= MENU LATERAL ================= */}
+      <aside className="admin-sidebar">
+        <h3>Acessos</h3>
+
+        {user.roles.includes("cliente") && (
+          <button
+            onClick={() => {
+              trocarTipo("cliente");
+              navigate("/cliente");
+            }}
+          >
+            Área Cliente
+          </button>
+        )}
+
+        {user.roles.includes("dono") && (
+          <button
+            onClick={() => {
+              trocarTipo("dono");
+              navigate("/dono");
+            }}
+          >
+            Área Dono
+          </button>
+        )}
+
+        {user.roles.includes("motoboy") && (
+          <button
+            onClick={() => {
+              trocarTipo("motoboy");
+              navigate("/motoboy");
+            }}
+          >
+            Área Motoboy
+          </button>
+        )}
+      </aside>
+
     </div>
   );
 }

@@ -19,6 +19,10 @@ function Register() {
     return /\S+@\S+\.\S+/.test(emailValue);
   };
 
+  const validarSenha = (senhaValue) => {
+    return senhaValue.length >= 6;
+  };
+
   const cadastrar = async (e) => {
     e.preventDefault();
     setErro("");
@@ -34,6 +38,17 @@ function Register() {
 
     if (!validarEmail(emailLimpo)) {
       setErro("Digite um email válido.");
+      return;
+    }
+
+    if (!validarSenha(senhaLimpa)) {
+      setErro("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    // 🔒 Segurança extra: nunca permitir admin via frontend
+    if (tipo === "admin") {
+      setErro("Tipo inválido.");
       return;
     }
 
@@ -57,8 +72,8 @@ function Register() {
 
       try {
         data = await response.json();
-      } catch (jsonError) {
-        console.error("Erro ao converter resposta:", jsonError);
+      } catch {
+        throw new Error("Resposta inválida do servidor");
       }
 
       if (!response.ok) {
@@ -66,7 +81,9 @@ function Register() {
         return;
       }
 
-      alert(data?.mensagem || "Operação realizada com sucesso!");
+      alert(data?.mensagem || "Conta criada com sucesso!");
+
+      // Após registro, volta para login
       navigate("/");
 
     } catch (error) {
@@ -90,6 +107,7 @@ function Register() {
           value={nome}
           onChange={(e) => setNome(e.target.value)}
           style={styles.input}
+          required
         />
 
         <input
@@ -98,14 +116,16 @@ function Register() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           style={styles.input}
+          required
         />
 
         <input
           type="password"
-          placeholder="Senha"
+          placeholder="Senha (mínimo 6 caracteres)"
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
           style={styles.input}
+          required
         />
 
         <select

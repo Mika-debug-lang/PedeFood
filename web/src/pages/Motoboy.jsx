@@ -6,7 +6,7 @@ import AuthContext from "../context/AuthContext";
 const API_URL = import.meta.env.VITE_API_URL;
 
 function Motoboy() {
-  const { user, loading: authLoading } = useContext(AuthContext);
+  const { user, loading: authLoading, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const [entregas, setEntregas] = useState([]);
 
@@ -82,6 +82,13 @@ function Motoboy() {
     }
   };
 
+  /* ================= LOGOUT ================= */
+
+  const sair = () => {
+    logout();
+    navigate("/login");
+  };
+
   /* ================= BLOQUEIO DE RENDER ================= */
 
   if (authLoading || !user || user.tipo !== "motoboy") return null;
@@ -90,7 +97,24 @@ function Motoboy() {
 
   return (
     <div style={{ padding: 30 }}>
-      <h1>🛵 Painel do Motoboy</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1>🛵 Painel do Motoboy</h1>
+
+        <button
+          onClick={sair}
+          style={{
+            padding: "8px 14px",
+            backgroundColor: "#e74c3c",
+            color: "#fff",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontWeight: "bold"
+          }}
+        >
+          Sair
+        </button>
+      </div>
 
       {entregas.length === 0 && (
         <p>Nenhuma entrega disponível.</p>

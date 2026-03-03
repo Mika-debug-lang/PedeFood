@@ -31,18 +31,17 @@ function RootRedirect() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  switch (user.tipo) {
-    case "cliente":
-      return <Navigate to="/cliente" replace />;
-    case "dono":
-      return <Navigate to="/dono" replace />;
-    case "motoboy":
-      return <Navigate to="/motoboy" replace />;
-    case "admin":
-      return <Navigate to="/admin" replace />;
-    default:
-      return <Navigate to="/login" replace />;
+  // 🔥 Vai para a ROLE ATIVA atual
+  if (user.tipo && user.roles?.includes(user.tipo)) {
+    return <Navigate to={`/${user.tipo}`} replace />;
   }
+
+  // fallback: vai para primeira role disponível
+  if (user.roles?.length > 0) {
+    return <Navigate to={`/${user.roles[0]}`} replace />;
+  }
+
+  return <Navigate to="/login" replace />;
 }
 
 function App() {
