@@ -30,7 +30,9 @@ function Login() {
     try {
       const response = await fetch(`${API_URL}/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           email: email.trim().toLowerCase(),
           senha,
@@ -38,33 +40,50 @@ function Login() {
         })
       });
 
-      const data = await response.json();
+      let data = {};
+
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
 
       if (!response.ok) {
         setErro(data?.erro || "Erro ao fazer login");
         return;
       }
 
-      if (!data.token || !data.roles) {
+      // 🔐 Validação mínima da resposta
+      if (!data?.token) {
         setErro("Erro inesperado no login.");
         return;
       }
 
-      // 🔐 Salva usuário autenticado
-      login({
-        nome: data.nome,
-        email: data.email,
-        tipo: data.tipo,
-        roles: data.roles,
-        token: data.token
-      });
+      // 🔧 Garantia de roles (fallback)
+      const roles = Array.isArray(data.roles)
+        ? data.roles
+        : data.tipo
+        ? [data.tipo]
+        : [];
 
-      // 🔥 PRIORIDADE TOTAL PARA ADMIN
-      if (data.roles.includes("admin")) {
+      const usuario = {
+        nome: data.nome || "",
+        email: data.email || email,
+        tipo: data.tipo || area,
+        roles,
+        token: data.token
+      };
+
+      // salva no AuthContext
+      login(usuario);
+
+      // 🔥 ADMIN sempre tem prioridade
+      if (roles.includes("admin")) {
         navigate("/admin");
-      } else {
-        navigate(`/${data.tipo}`);
+        return;
       }
+
+      navigate(`/${usuario.tipo}`);
 
     } catch (err) {
       console.error("Erro no login:", err);
@@ -79,6 +98,7 @@ function Login() {
       <div className="login-card">
 
         <h2 className="login-title">Bem-vindo</h2>
+
         <p className="login-subtitle">
           Escolha sua área e faça login
         </p>
@@ -120,6 +140,7 @@ function Login() {
         </form>
 
         <div className="login-links">
+
           <span onClick={() => navigate("/register")}>
             Criar conta
           </span>
@@ -127,6 +148,7 @@ function Login() {
           <span onClick={() => navigate("/forgot")}>
             Esqueceu a senha?
           </span>
+
         </div>
 
       </div>
