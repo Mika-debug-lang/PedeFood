@@ -40,41 +40,35 @@ function Login() {
         })
       });
 
-      let data = {};
-
-      try {
-        data = await response.json();
-      } catch {
-        data = {};
-      }
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         setErro(data?.erro || "Erro ao fazer login");
         return;
       }
 
-      // 🔐 Validação mínima da resposta
       if (!data?.token) {
         setErro("Erro inesperado no login.");
         return;
       }
 
-      // 🔧 Garantia de roles (fallback)
-      const roles = Array.isArray(data.roles)
-        ? data.roles
-        : data.tipo
-        ? [data.tipo]
-        : [];
+      // 🔐 roles vindas do backend
+      const roles = Array.isArray(data.roles) ? data.roles : [];
+
+      // 🚫 usuário não tem acesso à área escolhida
+      if (!roles.includes(area) && !roles.includes("admin")) {
+        setErro("Você não possui acesso a esta área.");
+        return;
+      }
 
       const usuario = {
         nome: data.nome || "",
         email: data.email || email,
-        tipo: data.tipo || area,
+        tipo: area, // 🔥 área ativa escolhida
         roles,
         token: data.token
       };
 
-      // salva no AuthContext
       login(usuario);
 
       // 🔥 ADMIN sempre tem prioridade
@@ -83,7 +77,7 @@ function Login() {
         return;
       }
 
-      navigate(`/${usuario.tipo}`);
+      navigate(`/${area}`);
 
     } catch (err) {
       console.error("Erro no login:", err);
