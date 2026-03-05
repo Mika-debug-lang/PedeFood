@@ -21,7 +21,10 @@ function Login() {
     e.preventDefault();
     setErro("");
 
-    if (!email.trim() || !senha.trim()) {
+    const emailLimpo = email.trim().toLowerCase();
+    const senhaLimpa = senha.trim();
+
+    if (!emailLimpo || !senhaLimpa) {
       setErro("Preencha todos os campos");
       return;
     }
@@ -30,18 +33,30 @@ function Login() {
 
     try {
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+
       const response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          senha
-        })
+          email: emailLimpo,
+          senha: senhaLimpa
+        }),
+        signal: controller.signal
       });
 
-      const data = await response.json().catch(() => ({}));
+      clearTimeout(timeout);
+
+      let data = {};
+
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
 
       if (!response.ok) {
         setErro(data?.erro || "Erro ao fazer login");
@@ -57,14 +72,14 @@ function Login() {
 
       const usuario = {
         nome: data.nome || "",
-        email: data.email || email,
+        email: data.email || emailLimpo,
         roles,
         token: data.token
       };
 
       login(usuario);
 
-      // 🔥 prioridade de acesso
+      // prioridade de acesso
       const prioridade = ["admin", "dono", "motoboy", "cliente"];
 
       const destino = prioridade.find(role => roles.includes(role));
@@ -78,11 +93,17 @@ function Login() {
     } catch (err) {
 
       console.error("Erro no login:", err);
-      setErro("Erro de conexão com o servidor");
+
+      if (err.name === "AbortError") {
+        setErro("Servidor demorou para responder.");
+      } else {
+        setErro("Erro de conexão com o servidor");
+      }
 
     } finally {
       setLoading(false);
     }
+
   };
 
   return (
