@@ -10,6 +10,7 @@ export function AuthProvider({ children }) {
   /* ================= CARREGAR DO LOCALSTORAGE ================= */
 
   useEffect(() => {
+
     try {
 
       const saved = localStorage.getItem("user");
@@ -32,23 +33,33 @@ export function AuthProvider({ children }) {
         const areaAtiva =
           parsed.area && parsed.roles.includes(parsed.area)
             ? parsed.area
-            : parsed.roles[0];
+            : parsed.roles[0] || "cliente";
 
         setUser({
-          ...parsed,
+          nome: parsed.nome,
+          email: parsed.email,
+          token: parsed.token,
+          roles: parsed.roles,
           area: areaAtiva
         });
 
       } else {
+
         localStorage.removeItem("user");
+
       }
 
     } catch (error) {
+
       console.error("Erro ao ler localStorage:", error);
       localStorage.removeItem("user");
+
     } finally {
+
       setLoading(false);
+
     }
+
   }, []);
 
   /* ================= LOGIN ================= */
@@ -58,7 +69,8 @@ export function AuthProvider({ children }) {
     if (
       !usuario ||
       !usuario.token ||
-      !Array.isArray(usuario.roles)
+      !Array.isArray(usuario.roles) ||
+      usuario.roles.length === 0
     ) {
       console.error("Tentativa de login inválida");
       return;
@@ -67,11 +79,11 @@ export function AuthProvider({ children }) {
     const areaAtiva =
       usuario.area && usuario.roles.includes(usuario.area)
         ? usuario.area
-        : usuario.roles[0];
+        : usuario.roles[0] || "cliente";
 
     const userData = {
-      nome: usuario.nome,
-      email: usuario.email,
+      nome: usuario.nome || "",
+      email: usuario.email || "",
       token: usuario.token,
       roles: usuario.roles,
       area: areaAtiva
@@ -79,25 +91,34 @@ export function AuthProvider({ children }) {
 
     setUser(userData);
     localStorage.setItem("user", JSON.stringify(userData));
+
   };
 
   /* ================= TROCAR ÁREA ================= */
 
   const trocarArea = (novaArea) => {
 
-    if (!user || !user.roles.includes(novaArea)) return;
+    if (!user) return;
 
-    const atualizado = { ...user, area: novaArea };
+    if (!user.roles.includes(novaArea)) return;
+
+    const atualizado = {
+      ...user,
+      area: novaArea
+    };
 
     setUser(atualizado);
     localStorage.setItem("user", JSON.stringify(atualizado));
+
   };
 
   /* ================= LOGOUT ================= */
 
   const logout = () => {
+
     setUser(null);
     localStorage.removeItem("user");
+
   };
 
   return (
@@ -113,6 +134,7 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
+
 }
 
 export default AuthContext;

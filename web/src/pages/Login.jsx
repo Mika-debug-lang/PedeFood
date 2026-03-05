@@ -68,7 +68,9 @@ function Login() {
         return;
       }
 
-      const roles = Array.isArray(data.roles) ? data.roles : [];
+      const roles = Array.isArray(data.roles) && data.roles.length > 0
+        ? data.roles
+        : ["cliente"];
 
       const usuario = {
         nome: data.nome || "",
@@ -79,16 +81,15 @@ function Login() {
 
       login(usuario);
 
-      // prioridade de acesso
+      /* ================= REDIRECIONAMENTO ================= */
+
       const prioridade = ["admin", "dono", "motoboy", "cliente"];
 
-      const destino = prioridade.find(role => roles.includes(role));
+      let destino = prioridade.find(role => roles.includes(role));
 
-      if (destino) {
-        navigate(`/${destino}`);
-      } else {
-        navigate("/");
-      }
+      if (!destino) destino = "cliente";
+
+      navigate(`/${destino}`);
 
     } catch (err) {
 
