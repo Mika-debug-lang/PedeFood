@@ -4,6 +4,7 @@ import AuthContext from "../context/AuthContext";
 import "./Login.css";
 
 function Login() {
+
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -17,6 +18,7 @@ function Login() {
     import.meta.env.VITE_API_URL || "https://pedefood.onrender.com";
 
   const entrar = async (e) => {
+
     e.preventDefault();
     setErro("");
 
@@ -28,6 +30,7 @@ function Login() {
     setLoading(true);
 
     try {
+
       const response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: {
@@ -35,8 +38,7 @@ function Login() {
         },
         body: JSON.stringify({
           email: email.trim().toLowerCase(),
-          senha,
-          tipo: area
+          senha
         })
       });
 
@@ -52,10 +54,8 @@ function Login() {
         return;
       }
 
-      // 🔐 roles vindas do backend
       const roles = Array.isArray(data.roles) ? data.roles : [];
 
-      // 🚫 usuário não tem acesso à área escolhida
       if (!roles.includes(area) && !roles.includes("admin")) {
         setErro("Você não possui acesso a esta área.");
         return;
@@ -64,14 +64,13 @@ function Login() {
       const usuario = {
         nome: data.nome || "",
         email: data.email || email,
-        tipo: area, // 🔥 área ativa escolhida
+        area: area,
         roles,
         token: data.token
       };
 
       login(usuario);
 
-      // 🔥 ADMIN sempre tem prioridade
       if (roles.includes("admin")) {
         navigate("/admin");
         return;
@@ -80,8 +79,10 @@ function Login() {
       navigate(`/${area}`);
 
     } catch (err) {
+
       console.error("Erro no login:", err);
       setErro("Erro de conexão com o servidor");
+
     } finally {
       setLoading(false);
     }
@@ -89,6 +90,7 @@ function Login() {
 
   return (
     <div className="login-container">
+
       <div className="login-card">
 
         <h2 className="login-title">Bem-vindo</h2>
@@ -139,13 +141,14 @@ function Login() {
             Criar conta
           </span>
 
-          <span onClick={() => navigate("/forgot")}>
+          <span onClick={() => navigate("/forgotpassword")}>
             Esqueceu a senha?
           </span>
 
         </div>
 
       </div>
+
     </div>
   );
 }

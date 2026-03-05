@@ -6,6 +6,7 @@ const API_URL =
   "https://pedefood.onrender.com";
 
 function Register() {
+
   const navigate = useNavigate();
 
   const [nome, setNome] = useState("");
@@ -24,6 +25,7 @@ function Register() {
   };
 
   const cadastrar = async (e) => {
+
     e.preventDefault();
     setErro("");
 
@@ -46,13 +48,13 @@ function Register() {
       return;
     }
 
-    // 🔒 Segurança extra: nunca permitir admin via frontend
     if (tipo === "admin") {
       setErro("Tipo inválido.");
       return;
     }
 
     try {
+
       setLoading(true);
 
       const response = await fetch(`${API_URL}/register`, {
@@ -68,13 +70,7 @@ function Register() {
         })
       });
 
-      let data = {};
-
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error("Resposta inválida do servidor");
-      }
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         setErro(data?.erro || "Erro ao registrar.");
@@ -83,12 +79,14 @@ function Register() {
 
       alert(data?.mensagem || "Conta criada com sucesso!");
 
-      // Após registro, volta para login
-      navigate("/");
+      // 🔥 ir direto para login
+      navigate("/login");
 
     } catch (error) {
+
       console.error("Erro completo:", error);
       setErro("Erro de conexão com o servidor.");
+
     } finally {
       setLoading(false);
     }
@@ -96,7 +94,9 @@ function Register() {
 
   return (
     <div style={styles.container}>
+
       <form style={styles.card} onSubmit={cadastrar}>
+
         <h2>Criar Conta</h2>
 
         {erro && <p style={styles.error}>{erro}</p>}
@@ -150,10 +150,12 @@ function Register() {
           {loading ? "Registrando..." : "Registrar"}
         </button>
 
-        <p style={styles.link} onClick={() => navigate("/")}>
+        <p style={styles.link} onClick={() => navigate("/login")}>
           Já tem conta? Entrar
         </p>
+
       </form>
+
     </div>
   );
 }

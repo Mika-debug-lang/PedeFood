@@ -11,114 +11,122 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 
 /* ================= SUBPÁGINAS CLIENTE ================= */
+
 import Lojas from "./pages/Lojas";
 import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
 
 /* ================= SUBPÁGINAS DONO ================= */
+
 import GerenciarLoja from "./pages/GerenciarLoja";
 import EditarLoja from "./pages/EditarLoja";
 
-/* ================= REDIRECIONAMENTO INTELIGENTE ================= */
+/* ================= REDIRECIONAMENTO ================= */
 
 import { useContext } from "react";
 import AuthContext from "./context/AuthContext";
 
 function RootRedirect() {
+
   const { user, loading } = useContext(AuthContext);
 
   if (loading) return null;
 
-  if (!user) return <Navigate to="/Login" replace />;
+  if (!user) return <Navigate to="/login" replace />;
 
-  // 🔥 Vai para a ROLE ATIVA atual
-  if (user.tipo && user.roles?.includes(user.tipo)) {
-    return <Navigate to={`/${user.tipo}`} replace />;
+  if (user.area && user.roles?.includes(user.area)) {
+    return <Navigate to={`/${user.area}`} replace />;
   }
 
-  // fallback: vai para primeira role disponível
   if (user.roles?.length > 0) {
     return <Navigate to={`/${user.roles[0]}`} replace />;
   }
 
-  return <Navigate to="/Login" replace />;
+  return <Navigate to="/login" replace />;
 }
 
 function App() {
+
   return (
     <Routes>
 
-      {/* ================= ROOT ================= */}
+      {/* ROOT */}
       <Route path="/" element={<RootRedirect />} />
 
-      {/* ================= PÚBLICAS ================= */}
-      <Route path="/Login" element={<Login />} />
-      <Route path="/Register" element={<Register />} />
-      <Route path="/ForgotPassword" element={<ForgotPassword />} />
+      {/* PÚBLICAS */}
 
-      {/* ================= CLIENTE ================= */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgotpassword" element={<ForgotPassword />} />
+
+      {/* CLIENTE */}
+
       <Route
-        path="/Cliente"
+        path="/cliente"
         element={
-          <PrivateRoute allowed="Cliente">
+          <PrivateRoute allowed="cliente">
             <Cliente />
           </PrivateRoute>
         }
       >
         <Route index element={<Lojas />} />
-        <Route path="Checkout" element={<Checkout />} />
-        <Route path="Orders" element={<Orders />} />
+        <Route path="checkout" element={<Checkout />} />
+        <Route path="orders" element={<Orders />} />
       </Route>
 
-      {/* ================= DONO ================= */}
+      {/* DONO */}
+
       <Route
-        path="/Dono"
+        path="/dono"
         element={
-          <PrivateRoute allowed="Dono">
+          <PrivateRoute allowed="dono">
             <Dono />
           </PrivateRoute>
         }
       />
 
       <Route
-        path="/Dono/loja/:id"
+        path="/dono/loja/:id"
         element={
-          <PrivateRoute allowed="Dono">
+          <PrivateRoute allowed="dono">
             <GerenciarLoja />
           </PrivateRoute>
         }
       />
 
       <Route
-        path="/Dono/editar/:id"
+        path="/dono/editar/:id"
         element={
-          <PrivateRoute allowed="Dono">
+          <PrivateRoute allowed="dono">
             <EditarLoja />
           </PrivateRoute>
         }
       />
 
-      {/* ================= MOTOBOY ================= */}
+      {/* MOTOBOY */}
+
       <Route
-        path="/Motoboy"
+        path="/motoboy"
         element={
-          <PrivateRoute allowed="Motoboy">
+          <PrivateRoute allowed="motoboy">
             <Motoboy />
           </PrivateRoute>
         }
       />
 
-      {/* ================= ADMIN ================= */}
+      {/* ADMIN */}
+
       <Route
-        path="/Admin"
+        path="/admin"
         element={
-          <PrivateRoute allowed="Admin">
+          <PrivateRoute allowed="admin">
             <Admin />
           </PrivateRoute>
         }
       />
 
-      {/* ================= 404 ================= */}
+      {/* 404 */}
+
       <Route
         path="*"
         element={

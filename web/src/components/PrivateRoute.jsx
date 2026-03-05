@@ -3,44 +3,45 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
 
 function PrivateRoute({ children, allowed }) {
+
   const { user, loading } = useContext(AuthContext);
 
-  // ⏳ Esperando autenticação
-  if (loading) return null;
+  // ⏳ aguardando autenticação
+  if (loading) {
+    return <div style={{ padding: 20 }}>Carregando...</div>;
+  }
 
-  // 🚫 Não logado
+  // 🚫 não autenticado
   if (!user || !user.token) {
     return <Navigate to="/login" replace />;
   }
 
-  // 🚫 Sem roles definidas
-  if (!user.roles || user.roles.length === 0) {
+  // 🚫 usuário sem roles
+  if (!Array.isArray(user.roles) || user.roles.length === 0) {
     return <Navigate to="/login" replace />;
   }
 
-  // 🔎 Se houver restrição de acesso
+  // 🔎 verificar permissão
   if (allowed) {
+
     const allowedRoles = Array.isArray(allowed)
       ? allowed
       : [allowed];
 
-    const possuiPermissao = allowedRoles.some((role) =>
+    const possuiPermissao = allowedRoles.some(role =>
       user.roles.includes(role)
     );
 
     if (!possuiPermissao) {
-      // 🔁 Redireciona para primeira role válida do usuário
+
+      // prioridade de redirecionamento
       const prioridade = ["admin", "dono", "motoboy", "cliente"];
 
-      const roleDestino = prioridade.find((role) =>
-        user.roles.includes(role)
-      );
+      const destino =
+        prioridade.find(role => user.roles.includes(role)) ||
+        user.roles[0];
 
-      if (roleDestino) {
-        return <Navigate to={`/${roleDestino}`} replace />;
-      }
-
-      return <Navigate to="/login" replace />;
+      return <Navigate to={`/${destino}`} replace />;
     }
   }
 

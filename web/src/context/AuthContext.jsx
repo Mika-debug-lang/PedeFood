@@ -11,6 +11,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     try {
+
       const saved = localStorage.getItem("user");
 
       if (!saved) {
@@ -20,7 +21,6 @@ export function AuthProvider({ children }) {
 
       const parsed = JSON.parse(saved);
 
-      // 🔎 Validação segura
       if (
         parsed &&
         typeof parsed === "object" &&
@@ -28,7 +28,17 @@ export function AuthProvider({ children }) {
         Array.isArray(parsed.roles) &&
         parsed.roles.length > 0
       ) {
-        setUser(parsed);
+
+        const areaAtiva =
+          parsed.area && parsed.roles.includes(parsed.area)
+            ? parsed.area
+            : parsed.roles[0];
+
+        setUser({
+          ...parsed,
+          area: areaAtiva
+        });
+
       } else {
         localStorage.removeItem("user");
       }
@@ -44,6 +54,7 @@ export function AuthProvider({ children }) {
   /* ================= LOGIN ================= */
 
   const login = (usuario) => {
+
     if (
       !usuario ||
       !usuario.token ||
@@ -53,10 +64,9 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    // 🔥 Se não vier tipo, define o primeiro role como ativo
-    const tipoAtivo =
-      usuario.tipo && usuario.roles.includes(usuario.tipo)
-        ? usuario.tipo
+    const areaAtiva =
+      usuario.area && usuario.roles.includes(usuario.area)
+        ? usuario.area
         : usuario.roles[0];
 
     const userData = {
@@ -64,19 +74,21 @@ export function AuthProvider({ children }) {
       email: usuario.email,
       token: usuario.token,
       roles: usuario.roles,
-      tipo: tipoAtivo, // área atual ativa
+      area: areaAtiva
     };
 
     setUser(userData);
     localStorage.setItem("user", JSON.stringify(userData));
   };
 
-  /* ================= TROCAR ROLE ATIVA ================= */
+  /* ================= TROCAR ÁREA ================= */
 
-  const trocarTipo = (novoTipo) => {
-    if (!user || !user.roles.includes(novoTipo)) return;
+  const trocarArea = (novaArea) => {
 
-    const atualizado = { ...user, tipo: novoTipo };
+    if (!user || !user.roles.includes(novaArea)) return;
+
+    const atualizado = { ...user, area: novaArea };
+
     setUser(atualizado);
     localStorage.setItem("user", JSON.stringify(atualizado));
   };
@@ -95,7 +107,7 @@ export function AuthProvider({ children }) {
         login,
         logout,
         loading,
-        trocarTipo, // 🔥 novo recurso
+        trocarArea
       }}
     >
       {children}
