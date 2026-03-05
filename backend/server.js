@@ -120,6 +120,7 @@ app.post("/register", async (req, res) => {
     let usuario = await Usuario.findOne({ email: emailNormalizado });
 
     if (usuario) {
+
       if (usuario.roles.includes(tipo))
         return res
           .status(400)
@@ -147,6 +148,7 @@ app.post("/register", async (req, res) => {
       mensagem: "Usuário criado com sucesso",
       roles: novoUsuario.roles,
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ erro: "Erro interno" });
@@ -157,15 +159,11 @@ app.post("/register", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   try {
-    const { email, senha, tipo } = req.body;
 
-    if (!email || !senha || !tipo)
+    const { email, senha } = req.body;
+
+    if (!email || !senha)
       return res.status(400).json({ erro: "Campos obrigatórios" });
-
-    const tipoNormalizado = tipo.toLowerCase();
-
-    if (!TODAS_ROLES.includes(tipoNormalizado))
-      return res.status(400).json({ erro: "Tipo inválido" });
 
     const usuario = await Usuario.findOne({
       email: email.trim().toLowerCase(),
@@ -190,13 +188,6 @@ app.post("/login", async (req, res) => {
       }
     }
 
-    const isAdmin = usuario.roles.includes("admin");
-
-    if (!isAdmin && !usuario.roles.includes(tipoNormalizado))
-      return res
-        .status(403)
-        .json({ erro: "Acesso negado para essa área" });
-
     const token = jwt.sign(
       {
         id: usuario._id.toString(),
@@ -209,7 +200,6 @@ app.post("/login", async (req, res) => {
     res.json({
       nome: usuario.nome,
       email: usuario.email,
-      tipo: tipoNormalizado,
       roles: usuario.roles,
       token,
     });
@@ -219,103 +209,6 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ erro: "Erro interno" });
   }
 });
-
-/* ================= LOJAS ================= */
-
-/* ADMIN - ver todas */
-app.get(
-  "/lojas",
-  autenticarToken,
-  autorizarRoles(["admin"]),
-  async (req, res) => {
-    const lojas = await Loja.find().sort({ createdAt: -1 });
-    res.json(lojas);
-  }
-);
-
-/* CLIENTE - ver ativas */
-app.get("/lojas/ativas", async (req, res) => {
-  try {
-    const lojas = await Loja.find({ status: "aprovada" })
-      .sort({ createdAt: -1 });
-
-    res.json(lojas);
-  } catch (err) {
-    res.status(500).json({ erro: "Erro ao buscar lojas ativas" });
-  }
-});
-
-/* DONO - ver minha loja */
-app.get(
-  "/lojas/minha",
-  autenticarToken,
-  autorizarRoles(["dono"]),
-  async (req, res) => {
-    const loja = await Loja.findOne({ donoId: req.usuario.id });
-
-    if (!loja)
-      return res.status(404).json({ erro: "Loja não encontrada" });
-
-    res.json(loja);
-  }
-);
-
-/* DONO - criar loja */
-app.post(
-  "/lojas",
-  autenticarToken,
-  autorizarRoles(["dono"]),
-  async (req, res) => {
-    const { nome, descricao, imagem, categoria } = req.body;
-
-    const novaLoja = await Loja.create({
-      nome,
-      descricao,
-      imagem,
-      categoria,
-      status: "pendente",
-      donoId: req.usuario.id,
-    });
-
-    res.status(201).json(novaLoja);
-  }
-);
-
-/* ADMIN - aprovar loja */
-app.put(
-  "/lojas/:id/aprovar",
-  autenticarToken,
-  autorizarRoles(["admin"]),
-  async (req, res) => {
-    await Loja.findByIdAndUpdate(req.params.id, {
-      status: "aprovada",
-    });
-
-    res.json({ mensagem: "Loja aprovada" });
-  }
-);
-
-/* ADMIN ou DONO - deletar loja */
-app.delete(
-  "/lojas/:id",
-  autenticarToken,
-  async (req, res) => {
-    const loja = await Loja.findById(req.params.id);
-
-    if (!loja)
-      return res.status(404).json({ erro: "Loja não encontrada" });
-
-    const isAdmin = req.usuario.roles.includes("admin");
-    const isDono = loja.donoId?.toString() === req.usuario.id;
-
-    if (!isAdmin && !isDono)
-      return res.status(403).json({ erro: "Acesso negado" });
-
-    await loja.deleteOne();
-
-    res.json({ mensagem: "Loja excluída" });
-  }
-);
 
 /* ================= PRODUTOS ================= */
 
