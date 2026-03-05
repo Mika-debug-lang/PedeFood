@@ -21,124 +21,142 @@ import Orders from "./pages/Orders";
 import GerenciarLoja from "./pages/GerenciarLoja";
 import EditarLoja from "./pages/EditarLoja";
 
-/* ================= REDIRECIONAMENTO ================= */
+/* ================= CONTEXT ================= */
 
 import { useContext } from "react";
 import AuthContext from "./context/AuthContext";
 
+/* ================= REDIRECIONAMENTO ROOT ================= */
+
 function RootRedirect() {
 
-  const { user, loading } = useContext(AuthContext);
+const { user, loading } = useContext(AuthContext);
 
-  if (loading) return null;
+if (loading) return null;
 
-  if (!user) return <Navigate to="/login" replace />;
+// Usuário não logado
+if (!user) {
+return <Navigate to="/login" replace />;
+}
 
-  if (user.area && user.roles?.includes(user.area)) {
-    return <Navigate to={`/${user.area}`} replace />;
-  }
+const roles = Array.isArray(user.roles) ? user.roles : [];
 
-  if (user.roles?.length > 0) {
-    return <Navigate to={`/${user.roles[0]}`} replace />;
-  }
+// Prioridade de acesso
+if (roles.includes("admin")) {
+return <Navigate to="/admin" replace />;
+}
 
-  return <Navigate to="/login" replace />;
+if (roles.includes("dono")) {
+return <Navigate to="/dono" replace />;
+}
+
+if (roles.includes("motoboy")) {
+return <Navigate to="/motoboy" replace />;
+}
+
+if (roles.includes("cliente")) {
+return <Navigate to="/cliente" replace />;
+}
+
+// fallback
+return <Navigate to="/login" replace />;
 }
 
 function App() {
 
-  return (
-    <Routes>
+return ( <Routes>
 
-      {/* ROOT */}
-      <Route path="/" element={<RootRedirect />} />
+```
+  {/* ROOT */}
+  <Route path="/" element={<RootRedirect />} />
 
-      {/* PÚBLICAS */}
+  {/* ================= ROTAS PÚBLICAS ================= */}
 
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgotpassword" element={<ForgotPassword />} />
+  <Route path="/login" element={<Login />} />
+  <Route path="/register" element={<Register />} />
+  <Route path="/forgotpassword" element={<ForgotPassword />} />
 
-      {/* CLIENTE */}
+  {/* ================= CLIENTE ================= */}
 
-      <Route
-        path="/cliente"
-        element={
-          <PrivateRoute allowed="cliente">
-            <Cliente />
-          </PrivateRoute>
-        }
-      >
-        <Route index element={<Lojas />} />
-        <Route path="checkout" element={<Checkout />} />
-        <Route path="orders" element={<Orders />} />
-      </Route>
+  <Route
+    path="/cliente"
+    element={
+      <PrivateRoute allowed="cliente">
+        <Cliente />
+      </PrivateRoute>
+    }
+  >
+    <Route index element={<Lojas />} />
+    <Route path="checkout" element={<Checkout />} />
+    <Route path="orders" element={<Orders />} />
+  </Route>
 
-      {/* DONO */}
+  {/* ================= DONO ================= */}
 
-      <Route
-        path="/dono"
-        element={
-          <PrivateRoute allowed="dono">
-            <Dono />
-          </PrivateRoute>
-        }
-      />
+  <Route
+    path="/dono"
+    element={
+      <PrivateRoute allowed="dono">
+        <Dono />
+      </PrivateRoute>
+    }
+  />
 
-      <Route
-        path="/dono/loja/:id"
-        element={
-          <PrivateRoute allowed="dono">
-            <GerenciarLoja />
-          </PrivateRoute>
-        }
-      />
+  <Route
+    path="/dono/loja/:id"
+    element={
+      <PrivateRoute allowed="dono">
+        <GerenciarLoja />
+      </PrivateRoute>
+    }
+  />
 
-      <Route
-        path="/dono/editar/:id"
-        element={
-          <PrivateRoute allowed="dono">
-            <EditarLoja />
-          </PrivateRoute>
-        }
-      />
+  <Route
+    path="/dono/editar/:id"
+    element={
+      <PrivateRoute allowed="dono">
+        <EditarLoja />
+      </PrivateRoute>
+    }
+  />
 
-      {/* MOTOBOY */}
+  {/* ================= MOTOBOY ================= */}
 
-      <Route
-        path="/motoboy"
-        element={
-          <PrivateRoute allowed="motoboy">
-            <Motoboy />
-          </PrivateRoute>
-        }
-      />
+  <Route
+    path="/motoboy"
+    element={
+      <PrivateRoute allowed="motoboy">
+        <Motoboy />
+      </PrivateRoute>
+    }
+  />
 
-      {/* ADMIN */}
+  {/* ================= ADMIN ================= */}
 
-      <Route
-        path="/admin"
-        element={
-          <PrivateRoute allowed="admin">
-            <Admin />
-          </PrivateRoute>
-        }
-      />
+  <Route
+    path="/admin"
+    element={
+      <PrivateRoute allowed="admin">
+        <Admin />
+      </PrivateRoute>
+    }
+  />
 
-      {/* 404 */}
+  {/* ================= 404 ================= */}
 
-      <Route
-        path="*"
-        element={
-          <div style={{ padding: 40, textAlign: "center" }}>
-            <h1>404</h1>
-            <p>Página não encontrada</p>
-          </div>
-        }
-      />
+  <Route
+    path="*"
+    element={
+      <div style={{ padding: 40, textAlign: "center" }}>
+        <h1>404</h1>
+        <p>Página não encontrada</p>
+      </div>
+    }
+  />
 
-    </Routes>
-  );
+</Routes>
+
+);
 }
 
 export default App;
