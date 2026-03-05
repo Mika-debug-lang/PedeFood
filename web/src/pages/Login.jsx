@@ -10,7 +10,6 @@ function Login() {
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [area, setArea] = useState("cliente");
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -56,27 +55,25 @@ function Login() {
 
       const roles = Array.isArray(data.roles) ? data.roles : [];
 
-      if (!roles.includes(area) && !roles.includes("admin")) {
-        setErro("Você não possui acesso a esta área.");
-        return;
-      }
-
       const usuario = {
         nome: data.nome || "",
         email: data.email || email,
-        area: area,
         roles,
         token: data.token
       };
 
       login(usuario);
 
-      if (roles.includes("admin")) {
-        navigate("/admin");
-        return;
-      }
+      // 🔥 prioridade de acesso
+      const prioridade = ["admin", "dono", "motoboy", "cliente"];
 
-      navigate(`/${area}`);
+      const destino = prioridade.find(role => roles.includes(role));
+
+      if (destino) {
+        navigate(`/${destino}`);
+      } else {
+        navigate("/");
+      }
 
     } catch (err) {
 
@@ -96,7 +93,7 @@ function Login() {
         <h2 className="login-title">Bem-vindo</h2>
 
         <p className="login-subtitle">
-          Escolha sua área e faça login
+          Faça login para continuar
         </p>
 
         {erro && <div className="login-error">{erro}</div>}
@@ -118,16 +115,6 @@ function Login() {
             onChange={(e) => setSenha(e.target.value)}
             required
           />
-
-          <select
-            value={area}
-            onChange={(e) => setArea(e.target.value)}
-            className="login-select"
-          >
-            <option value="cliente">Área do Cliente</option>
-            <option value="dono">Área do Dono</option>
-            <option value="motoboy">Área do Motoboy</option>
-          </select>
 
           <button type="submit" disabled={loading}>
             {loading ? "Entrando..." : "Entrar"}
