@@ -29,7 +29,7 @@ function RootRedirect() {
 
   if (loading) return null;
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/Login" replace />;
 
   // 🔥 Vai para a ROLE ATIVA atual
   if (user.tipo && user.roles?.includes(user.tipo)) {
@@ -41,7 +41,7 @@ function RootRedirect() {
     return <Navigate to={`/${user.roles[0]}`} replace />;
   }
 
-  return <Navigate to="/login" replace />;
+  return <Navigate to="/Login" replace />;
 }
 
 function App() {
@@ -52,47 +52,47 @@ function App() {
       <Route path="/" element={<RootRedirect />} />
 
       {/* ================= PÚBLICAS ================= */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot" element={<ForgotPassword />} />
+      <Route path="/Login" element={<Login />} />
+      <Route path="/Register" element={<Register />} />
+      <Route path="/ForgotPassword" element={<ForgotPassword />} />
 
       {/* ================= CLIENTE ================= */}
       <Route
-        path="/cliente"
+        path="/Cliente"
         element={
-          <PrivateRoute allowed="cliente">
+          <PrivateRoute allowed="Cliente">
             <Cliente />
           </PrivateRoute>
         }
       >
         <Route index element={<Lojas />} />
-        <Route path="checkout" element={<Checkout />} />
-        <Route path="orders" element={<Orders />} />
+        <Route path="Checkout" element={<Checkout />} />
+        <Route path="Orders" element={<Orders />} />
       </Route>
 
       {/* ================= DONO ================= */}
       <Route
-        path="/dono"
+        path="/Dono"
         element={
-          <PrivateRoute allowed="dono">
+          <PrivateRoute allowed="Dono">
             <Dono />
           </PrivateRoute>
         }
       />
 
       <Route
-        path="/dono/loja/:id"
+        path="/Dono/loja/:id"
         element={
-          <PrivateRoute allowed="dono">
+          <PrivateRoute allowed="Dono">
             <GerenciarLoja />
           </PrivateRoute>
         }
       />
 
       <Route
-        path="/dono/editar/:id"
+        path="/Dono/editar/:id"
         element={
-          <PrivateRoute allowed="dono">
+          <PrivateRoute allowed="Dono">
             <EditarLoja />
           </PrivateRoute>
         }
@@ -100,9 +100,9 @@ function App() {
 
       {/* ================= MOTOBOY ================= */}
       <Route
-        path="/motoboy"
+        path="/Motoboy"
         element={
-          <PrivateRoute allowed="motoboy">
+          <PrivateRoute allowed="Motoboy">
             <Motoboy />
           </PrivateRoute>
         }
@@ -110,9 +110,9 @@ function App() {
 
       {/* ================= ADMIN ================= */}
       <Route
-        path="/admin"
+        path="/Admin"
         element={
-          <PrivateRoute allowed="admin">
+          <PrivateRoute allowed="Admin">
             <Admin />
           </PrivateRoute>
         }
