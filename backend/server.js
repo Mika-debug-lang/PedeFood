@@ -66,12 +66,14 @@ const Usuario = mongoose.model("Usuario", usuarioSchema);
 
 function autenticarToken(req, res, next) {
   const authHeader = req.headers.authorization;
+
   if (!authHeader)
     return res.status(401).json({ erro: "Token não fornecido" });
 
   const token = authHeader.split(" ")[1];
 
   try {
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     req.usuario = {
@@ -80,13 +82,17 @@ function autenticarToken(req, res, next) {
     };
 
     next();
+
   } catch {
+
     return res.status(403).json({ erro: "Token inválido" });
+
   }
 }
 
 function autorizarRoles(rolesPermitidas) {
   return (req, res, next) => {
+
     const permitido = rolesPermitidas.some((role) =>
       req.usuario.roles.includes(role)
     );
@@ -95,6 +101,7 @@ function autorizarRoles(rolesPermitidas) {
       return res.status(403).json({ erro: "Acesso negado" });
 
     next();
+
   };
 }
 
@@ -102,6 +109,7 @@ function autorizarRoles(rolesPermitidas) {
 
 app.post("/register", async (req, res) => {
   try {
+
     const { nome, email, senha, tipo } = req.body;
 
     if (!nome || !email || !senha || !tipo)
@@ -128,6 +136,7 @@ app.post("/register", async (req, res) => {
         mensagem: `Permissão '${tipo}' adicionada com sucesso`,
         roles: usuario.roles,
       });
+
     }
 
     const senhaHash = await bcrypt.hash(senha, 10);
@@ -145,8 +154,10 @@ app.post("/register", async (req, res) => {
     });
 
   } catch (err) {
+
     console.error(err);
     res.status(500).json({ erro: "Erro interno" });
+
   }
 });
 
@@ -177,10 +188,12 @@ app.post("/login", async (req, res) => {
 
     // ADMIN AUTOMÁTICO
     if (usuario.email === process.env.ADMIN_EMAIL) {
+
       if (!usuario.roles.includes("admin")) {
         usuario.roles.push("admin");
         await usuario.save();
       }
+
     }
 
     const token = jwt.sign(
@@ -200,19 +213,73 @@ app.post("/login", async (req, res) => {
     });
 
   } catch (err) {
+
     console.error(err);
     res.status(500).json({ erro: "Erro interno" });
+
+  }
+});
+
+/* ================= ROTAS LOJAS ================= */
+
+/* TODAS AS LOJAS */
+
+app.get("/lojas", async (req, res) => {
+  try {
+
+    const lojas = await Loja.find().sort({ createdAt: -1 });
+
+    res.json(lojas);
+
+  } catch (err) {
+
+    res.status(500).json({ erro: "Erro ao buscar lojas" });
+
+  }
+});
+
+/* LOJAS PENDENTES */
+
+app.get("/lojas/pendentes", async (req, res) => {
+  try {
+
+    const lojas = await Loja.find({ status: "pendente" });
+
+    res.json(lojas);
+
+  } catch {
+
+    res.status(500).json({ erro: "Erro ao buscar lojas pendentes" });
+
+  }
+});
+
+/* LOJAS ATIVAS */
+
+app.get("/lojas/ativas", async (req, res) => {
+  try {
+
+    const lojas = await Loja.find({ status: "ativa" });
+
+    res.json(lojas);
+
+  } catch {
+
+    res.status(500).json({ erro: "Erro ao buscar lojas ativas" });
+
   }
 });
 
 /* ================= PRODUTOS ================= */
 
 app.get("/produtos/:lojaId", async (req, res) => {
+
   const produtos = await Produto.find({
     lojaId: req.params.lojaId,
   }).sort({ createdAt: -1 });
 
   res.json(produtos);
+
 });
 
 /* ================= 404 ================= */
