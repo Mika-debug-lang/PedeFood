@@ -12,7 +12,7 @@ function Admin() {
   const [loading, setLoading] = useState(true);
 
   const API_URL =
-    import.meta.env.VITE_API_URL || "https://pedefood.onrender.com";
+    import.meta.env.VITE_API_URL || "https://pedefood-2.onrender.com";
 
   /* ================= PROTEÇÃO ================= */
 
