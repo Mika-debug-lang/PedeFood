@@ -5,6 +5,7 @@
   min-height: 100vh;
   background: #f4f6f9;
   font-family: system-ui, -apple-system, sans-serif;
+  position: relative;
 }
 
 /* ================= CONTEÚDO ================= */
@@ -25,10 +26,12 @@
 
 .admin-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
   margin-top: 20px;
 }
+
+/* ================= CARD ================= */
 
 .admin-card {
   background: white;
@@ -42,12 +45,15 @@
   transform: translateY(-5px);
 }
 
+/* imagem melhor ajustada */
+
 .admin-card img {
   width: 100%;
-  height: 180px;
-  object-fit: cover;
+  max-height: 200px;
+  object-fit: contain;
   border-radius: 15px;
   margin-bottom: 15px;
+  background: #f3f3f3;
 }
 
 .admin-card h3 {
@@ -88,6 +94,7 @@
   padding: 40px 20px;
   overflow-y: auto;
   border-left: 4px solid #ff2e4d;
+  transition: transform 0.3s ease;
 }
 
 .admin-sidebar h3 {
@@ -112,19 +119,19 @@
   background: #ff2e4d;
 }
 
-/* ================= SCROLLBAR ================= */
+/* ================= BOTÃO MENU ================= */
 
-.admin-sidebar::-webkit-scrollbar {
-  width: 8px;
-}
-
-.admin-sidebar::-webkit-scrollbar-thumb {
-  background: #ff2e4d;
-  border-radius: 10px;
-}
-
-.admin-sidebar::-webkit-scrollbar-track {
-  background: transparent;
+.menu-toggle {
+  display: none;
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  background: #111827;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  z-index: 999;
 }
 
 /* ================= BOTÃO DANGER ================= */
@@ -133,75 +140,33 @@
 .admin-card button.danger {
   background: linear-gradient(135deg, #ff1744, #d50000);
   color: white;
-  border: none;
   border-radius: 40px;
   padding: 12px 18px;
   font-weight: 700;
-  letter-spacing: 0.5px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 10px 25px rgba(213, 0, 0, 0.35);
-  position: relative;
-  overflow: hidden;
-}
-
-.admin-actions button.danger:hover,
-.admin-card button.danger:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 18px 40px rgba(213, 0, 0, 0.5);
-  background: linear-gradient(135deg, #ff1f5a, #b71c1c);
-}
-
-.admin-actions button.danger:active,
-.admin-card button.danger:active {
-  transform: scale(0.97);
-}
-
-.admin-actions button.danger::after,
-.admin-card button.danger::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -75%;
-  width: 50%;
-  height: 100%;
-  background: rgba(255,255,255,0.2);
-  transform: skewX(-20deg);
-  transition: 0.5s;
-}
-
-.admin-actions button.danger:hover::after,
-.admin-card button.danger:hover::after {
-  left: 130%;
 }
 
 /* ================= TABLET ================= */
 
 @media (max-width: 1024px) {
 
-  .admin-layout {
-    flex-direction: column;
-  }
-
-  .admin-sidebar {
-    width: 100%;
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    border-left: none;
-    border-bottom: 4px solid #ff2e4d;
-  }
-
-  .admin-sidebar button {
-    flex: 1;
-    margin-bottom: 0;
+  .admin-content-area {
+    padding: 40px;
   }
 
 }
 
 /* ================= CELULAR ================= */
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+
+  .menu-toggle {
+    display: block;
+  }
+
+  .admin-layout {
+    flex-direction: column;
+  }
 
   .admin-content-area {
     padding: 25px;
@@ -216,22 +181,21 @@
     gap: 20px;
   }
 
-  .admin-card img {
-    height: 150px;
-  }
-
-  .admin-actions {
-    flex-direction: column;
-  }
-
-  .admin-actions button {
-    width: 100%;
-  }
+  /* sidebar escondido */
 
   .admin-sidebar {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 20px;
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100%;
+    transform: translateX(100%);
+    z-index: 998;
+  }
+
+  /* sidebar aberto */
+
+  .admin-layout.sidebar-open .admin-sidebar {
+    transform: translateX(0);
   }
 
 }

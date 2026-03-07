@@ -12,6 +12,8 @@ function Admin() {
   const [ativas, setAtivas] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const API_URL =
     import.meta.env.VITE_API_URL || "https://pedefood-2.onrender.com";
 
@@ -131,7 +133,16 @@ function Admin() {
   if (authLoading || !user?.roles?.includes("admin")) return null;
 
   return (
-    <div className="admin-layout">
+    <div className={`admin-layout ${menuOpen ? "sidebar-open" : ""}`}>
+
+      {/* BOTÃO MENU MOBILE */}
+
+      <button
+        className="menu-toggle"
+        onClick={() => setMenuOpen(!menuOpen)}
+      >
+        ☰
+      </button>
 
       {/* ================= CONTEÚDO ================= */}
 
@@ -235,18 +246,17 @@ function Admin() {
 
       </div>
 
-      {/* ================= MENU LATERAL ================= */}
+      {/* ================= SIDEBAR ================= */}
 
       <aside className="admin-sidebar">
 
         <h3>Acessos</h3>
 
-        {/* ADMIN pode acessar tudo */}
-
         <button
           onClick={() => {
             trocarArea("cliente");
             navigate("/cliente");
+            setMenuOpen(false);
           }}
         >
           Área Cliente
@@ -256,6 +266,7 @@ function Admin() {
           onClick={() => {
             trocarArea("dono");
             navigate("/dono");
+            setMenuOpen(false);
           }}
         >
           Área Dono
@@ -265,6 +276,7 @@ function Admin() {
           onClick={() => {
             trocarArea("motoboy");
             navigate("/motoboy");
+            setMenuOpen(false);
           }}
         >
           Área Motoboy
