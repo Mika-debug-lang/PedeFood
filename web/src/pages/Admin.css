@@ -164,6 +164,13 @@
     display: block;
   }
 
+  .admin-card img {
+    max-height: 150px;
+    box-sizing: border-box;
+    max-width: auto;
+    display: flex;
+  }
+
   .admin-layout {
     flex-direction: column;
   }
