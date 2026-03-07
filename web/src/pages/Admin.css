@@ -164,8 +164,8 @@
     display: block;
   }
 
-  .admin-card img {
-    max-height: 150px;
+   img {
+    max-height: 100px;
     box-sizing: border-box;
     max-width: auto;
     display: flex;
