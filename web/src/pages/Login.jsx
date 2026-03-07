@@ -84,16 +84,19 @@ function Login() {
         return;
       }
 
+      /* ================= USUÁRIO ================= */
+
       const usuario = {
         nome: data.nome || "",
         email: data.email || emailLimpo,
         roles,
+        areaAtual: area, // 🔥 área escolhida
         token: data.token
       };
 
       login(usuario);
 
-      navigate(`/${area}`, { replace: true });
+      navigate(`/${area}`);
 
     } catch (err) {
 
@@ -144,12 +147,13 @@ function Login() {
             required
           />
 
-          {/* ================= SELEÇÃO DE ÁREA ================= */}
+          {/* SELEÇÃO DE ÁREA */}
 
           <select
-            value={area}
-            onChange={(e) => setArea(e.target.value)}
-          >
+              className="login-select"
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
+           >
 
             <option value="cliente">
               Entrar como Cliente
