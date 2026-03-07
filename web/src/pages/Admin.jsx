@@ -11,7 +11,6 @@ function Admin() {
   const [pendentes, setPendentes] = useState([]);
   const [ativas, setAtivas] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [menuOpen, setMenuOpen] = useState(false);
 
   const API_URL =
@@ -21,20 +20,34 @@ function Admin() {
 
   useEffect(() => {
 
-    if (!authLoading) {
+    if (authLoading) return;
 
-      if (!user) {
-        navigate("/login");
-        return;
-      }
+    if (!user) {
+      navigate("/login");
+      return;
+    }
 
-      if (!user.roles?.includes("admin")) {
-        navigate("/");
-      }
-
+    if (!user.roles?.includes("admin")) {
+      navigate("/");
     }
 
   }, [user, authLoading, navigate]);
+
+  /* ================= FECHAR MENU AO CLICAR FORA ================= */
+
+  useEffect(() => {
+
+    const fecharMenu = () => {
+      if (window.innerWidth < 768) {
+        setMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", fecharMenu);
+
+    return () => window.removeEventListener("resize", fecharMenu);
+
+  }, []);
 
   /* ================= BUSCAR LOJAS ================= */
 
@@ -52,9 +65,12 @@ function Admin() {
         }
       });
 
-      const data = await resp.json();
+      if (!resp.ok) {
+        console.error("Erro ao buscar lojas");
+        return;
+      }
 
-      if (!resp.ok) return;
+      const data = await resp.json();
 
       setPendentes(
         data.filter(l => l.status?.toLowerCase() === "pendente")
@@ -101,7 +117,7 @@ function Admin() {
 
     } catch (err) {
 
-      console.error(err);
+      console.error("Erro ao aprovar loja:", err);
 
     }
 
@@ -124,7 +140,7 @@ function Admin() {
 
     } catch (err) {
 
-      console.error(err);
+      console.error("Erro ao deletar loja:", err);
 
     }
 
@@ -133,9 +149,10 @@ function Admin() {
   if (authLoading || !user?.roles?.includes("admin")) return null;
 
   return (
+
     <div className={`admin-layout ${menuOpen ? "sidebar-open" : ""}`}>
 
-      {/* BOTÃO MENU MOBILE */}
+      {/* ================= BOTÃO MENU MOBILE ================= */}
 
       <button
         className="menu-toggle"
@@ -156,7 +173,7 @@ function Admin() {
 
           <>
 
-            {/* ================= PENDENTES ================= */}
+            {/* ================= LOJAS PENDENTES ================= */}
 
             <section>
 
@@ -168,13 +185,15 @@ function Admin() {
 
                   <div key={loja._id} className="admin-card">
 
-                    <img
-                      src={loja.imagem || "/placeholder.png"}
-                      alt={loja.nome}
-                      onError={(e) => {
-                        e.target.src = "/placeholder.png";
-                      }}
-                    />
+                    <div className="admin-card-img">
+                      <img
+                        src={loja.imagem || "/placeholder.png"}
+                        alt={loja.nome}
+                        onError={(e) => {
+                          e.target.src = "/placeholder.png";
+                        }}
+                      />
+                    </div>
 
                     <h3>{loja.nome}</h3>
                     <p>{loja.descricao}</p>
@@ -202,7 +221,7 @@ function Admin() {
 
             </section>
 
-            {/* ================= ATIVAS ================= */}
+            {/* ================= LOJAS ATIVAS ================= */}
 
             <section>
 
@@ -214,13 +233,15 @@ function Admin() {
 
                   <div key={loja._id} className="admin-card">
 
-                    <img
-                      src={loja.imagem || "/placeholder.png"}
-                      alt={loja.nome}
-                      onError={(e) => {
-                        e.target.src = "/placeholder.png";
-                      }}
-                    />
+                    <div className="admin-card-img">
+                      <img
+                        src={loja.imagem || "/placeholder.png"}
+                        alt={loja.nome}
+                        onError={(e) => {
+                          e.target.src = "/placeholder.png";
+                        }}
+                      />
+                    </div>
 
                     <h3>{loja.nome}</h3>
                     <p>{loja.descricao}</p>
@@ -246,7 +267,7 @@ function Admin() {
 
       </div>
 
-      {/* ================= SIDEBAR ================= */}
+      {/* ================= MENU LATERAL ================= */}
 
       <aside className="admin-sidebar">
 
