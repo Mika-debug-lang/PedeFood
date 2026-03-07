@@ -5,6 +5,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const path = require("path");
 
 const Loja = require("./models/Loja");
 const Produto = require("./models/Produto");
@@ -65,6 +66,7 @@ const Usuario = mongoose.model("Usuario", usuarioSchema);
 /* ================= MIDDLEWARE ================= */
 
 function autenticarToken(req, res, next) {
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader)
@@ -88,6 +90,7 @@ function autenticarToken(req, res, next) {
     return res.status(403).json({ erro: "Token inválido" });
 
   }
+
 }
 
 function autorizarRoles(rolesPermitidas) {
@@ -186,7 +189,6 @@ app.post("/login", async (req, res) => {
     if (!senhaValida)
       return res.status(401).json({ erro: "Senha incorreta" });
 
-    // ADMIN AUTOMÁTICO
     if (usuario.email === process.env.ADMIN_EMAIL) {
 
       if (!usuario.roles.includes("admin")) {
@@ -220,27 +222,26 @@ app.post("/login", async (req, res) => {
   }
 });
 
-/* ================= ROTAS LOJAS ================= */
-
-/* TODAS AS LOJAS */
+/* ================= LOJAS ================= */
 
 app.get("/lojas", async (req, res) => {
+
   try {
 
     const lojas = await Loja.find().sort({ createdAt: -1 });
 
     res.json(lojas);
 
-  } catch (err) {
+  } catch {
 
     res.status(500).json({ erro: "Erro ao buscar lojas" });
 
   }
+
 });
 
-/* LOJAS PENDENTES */
-
 app.get("/lojas/pendentes", async (req, res) => {
+
   try {
 
     const lojas = await Loja.find({ status: "pendente" });
@@ -252,11 +253,11 @@ app.get("/lojas/pendentes", async (req, res) => {
     res.status(500).json({ erro: "Erro ao buscar lojas pendentes" });
 
   }
+
 });
 
-/* LOJAS ATIVAS */
-
 app.get("/lojas/ativas", async (req, res) => {
+
   try {
 
     const lojas = await Loja.find({ status: "ativa" });
@@ -268,24 +269,41 @@ app.get("/lojas/ativas", async (req, res) => {
     res.status(500).json({ erro: "Erro ao buscar lojas ativas" });
 
   }
+
 });
 
 /* ================= PRODUTOS ================= */
 
 app.get("/produtos/:lojaId", async (req, res) => {
 
-  const produtos = await Produto.find({
-    lojaId: req.params.lojaId,
-  }).sort({ createdAt: -1 });
+  try {
 
-  res.json(produtos);
+    const produtos = await Produto.find({
+      lojaId: req.params.lojaId,
+    }).sort({ createdAt: -1 });
+
+    res.json(produtos);
+
+  } catch {
+
+    res.status(500).json({ erro: "Erro ao buscar produtos" });
+
+  }
 
 });
 
-/* ================= 404 ================= */
+/* ================= SERVIR FRONTEND ================= */
 
-app.use((req, res) => {
-  res.status(404).json({ erro: "Rota não encontrada" });
+const frontendPath = path.join(__dirname, "dist");
+
+app.use(express.static(frontendPath));
+
+/* ================= ROTAS REACT ================= */
+
+app.get("*", (req, res) => {
+
+  res.sendFile(path.join(frontendPath, "index.html"));
+
 });
 
 /* ================= START ================= */
