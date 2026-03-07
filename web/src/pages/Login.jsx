@@ -68,6 +68,8 @@ function Login() {
         return;
       }
 
+      /* ================= NORMALIZAR ROLES ================= */
+
       const roles = Array.isArray(data.roles) && data.roles.length > 0
         ? data.roles
         : ["cliente"];
@@ -89,7 +91,7 @@ function Login() {
 
       if (!destino) destino = "cliente";
 
-      navigate(`/${destino}`);
+      navigate(`/${destino}`, { replace: true });
 
     } catch (err) {
 
@@ -102,7 +104,9 @@ function Login() {
       }
 
     } finally {
+
       setLoading(false);
+
     }
 
   };
