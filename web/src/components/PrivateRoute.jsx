@@ -6,22 +6,28 @@ function PrivateRoute({ children, allowed }) {
 
   const { user, loading } = useContext(AuthContext);
 
-  // ⏳ aguardando autenticação
+  /* ================= AGUARDANDO AUTENTICAÇÃO ================= */
+
   if (loading) {
     return <div style={{ padding: 20 }}>Carregando...</div>;
   }
 
-  // 🚫 não autenticado
+  /* ================= NÃO AUTENTICADO ================= */
+
   if (!user || !user.token) {
     return <Navigate to="/login" replace />;
   }
 
-  // 🚫 usuário sem roles
-  if (!Array.isArray(user.roles) || user.roles.length === 0) {
+  /* ================= VALIDAR ROLES ================= */
+
+  const roles = Array.isArray(user.roles) ? user.roles : [];
+
+  if (roles.length === 0) {
     return <Navigate to="/login" replace />;
   }
 
-  // 🔎 verificar permissão
+  /* ================= VERIFICAR PERMISSÃO ================= */
+
   if (allowed) {
 
     const allowedRoles = Array.isArray(allowed)
@@ -29,21 +35,24 @@ function PrivateRoute({ children, allowed }) {
       : [allowed];
 
     const possuiPermissao = allowedRoles.some(role =>
-      user.roles.includes(role)
+      roles.includes(role)
     );
 
     if (!possuiPermissao) {
 
-      // prioridade de redirecionamento
+      /* ================= REDIRECIONAMENTO SEGURO ================= */
+
       const prioridade = ["admin", "dono", "motoboy", "cliente"];
 
       const destino =
-        prioridade.find(role => user.roles.includes(role)) ||
-        user.roles[0];
+        prioridade.find(role => roles.includes(role)) ||
+        "cliente";
 
       return <Navigate to={`/${destino}`} replace />;
     }
   }
+
+  /* ================= ACESSO LIBERADO ================= */
 
   return children;
 }

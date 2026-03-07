@@ -30,133 +30,125 @@ import AuthContext from "./context/AuthContext";
 
 function RootRedirect() {
 
-const { user, loading } = useContext(AuthContext);
+  const { user, loading } = useContext(AuthContext);
 
-if (loading) return null;
+  if (loading) return null;
 
-// Usuário não logado
-if (!user) {
-return <Navigate to="/login" replace />;
-}
+  // usuário não logado
+  if (!user || !user.roles) {
+    return <Navigate to="/login" replace />;
+  }
 
-const roles = Array.isArray(user.roles) ? user.roles : [];
+  const roles = Array.isArray(user.roles) ? user.roles : [];
 
-// Prioridade de acesso
-if (roles.includes("admin")) {
-return <Navigate to="/admin" replace />;
-}
+  // prioridade de acesso
+  if (roles.includes("admin")) {
+    return <Navigate to="/admin" replace />;
+  }
 
-if (roles.includes("dono")) {
-return <Navigate to="/dono" replace />;
-}
+  if (roles.includes("dono")) {
+    return <Navigate to="/dono" replace />;
+  }
 
-if (roles.includes("motoboy")) {
-return <Navigate to="/motoboy" replace />;
-}
+  if (roles.includes("motoboy")) {
+    return <Navigate to="/motoboy" replace />;
+  }
 
-if (roles.includes("cliente")) {
-return <Navigate to="/cliente" replace />;
-}
+  if (roles.includes("cliente")) {
+    return <Navigate to="/cliente" replace />;
+  }
 
-// fallback
-return <Navigate to="/login" replace />;
+  return <Navigate to="/login" replace />;
 }
 
 function App() {
 
-return ( <Routes>
+  return (
 
-```
-  {/* ROOT */}
-  <Route path="/" element={<RootRedirect />} />
+    <Routes>
 
-  {/* ================= ROTAS PÚBLICAS ================= */}
+      {/* ROOT */}
+      <Route path="/" element={<RootRedirect />} />
 
-  <Route path="/login" element={<Login />} />
-  <Route path="/register" element={<Register />} />
-  <Route path="/forgotpassword" element={<ForgotPassword />} />
+      {/* ================= ROTAS PÚBLICAS ================= */}
 
-  {/* ================= CLIENTE ================= */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgotpassword" element={<ForgotPassword />} />
 
-  <Route
-    path="/cliente"
-    element={
-      <PrivateRoute allowed="cliente">
-        <Cliente />
-      </PrivateRoute>
-    }
-  >
-    <Route index element={<Lojas />} />
-    <Route path="checkout" element={<Checkout />} />
-    <Route path="orders" element={<Orders />} />
-  </Route>
+      {/* ================= CLIENTE ================= */}
 
-  {/* ================= DONO ================= */}
+      <Route
+        path="/cliente"
+        element={
+          <PrivateRoute allowed="cliente">
+            <Cliente />
+          </PrivateRoute>
+        }
+      >
+        <Route index element={<Lojas />} />
+        <Route path="checkout" element={<Checkout />} />
+        <Route path="orders" element={<Orders />} />
+      </Route>
 
-  <Route
-    path="/dono"
-    element={
-      <PrivateRoute allowed="dono">
-        <Dono />
-      </PrivateRoute>
-    }
-  />
+      {/* ================= DONO ================= */}
 
-  <Route
-    path="/dono/loja/:id"
-    element={
-      <PrivateRoute allowed="dono">
-        <GerenciarLoja />
-      </PrivateRoute>
-    }
-  />
+      <Route
+        path="/dono"
+        element={
+          <PrivateRoute allowed="dono">
+            <Dono />
+          </PrivateRoute>
+        }
+      />
 
-  <Route
-    path="/dono/editar/:id"
-    element={
-      <PrivateRoute allowed="dono">
-        <EditarLoja />
-      </PrivateRoute>
-    }
-  />
+      <Route
+        path="/dono/loja/:id"
+        element={
+          <PrivateRoute allowed="dono">
+            <GerenciarLoja />
+          </PrivateRoute>
+        }
+      />
 
-  {/* ================= MOTOBOY ================= */}
+      <Route
+        path="/dono/editar/:id"
+        element={
+          <PrivateRoute allowed="dono">
+            <EditarLoja />
+          </PrivateRoute>
+        }
+      />
 
-  <Route
-    path="/motoboy"
-    element={
-      <PrivateRoute allowed="motoboy">
-        <Motoboy />
-      </PrivateRoute>
-    }
-  />
+      {/* ================= MOTOBOY ================= */}
 
-  {/* ================= ADMIN ================= */}
+      <Route
+        path="/motoboy"
+        element={
+          <PrivateRoute allowed="motoboy">
+            <Motoboy />
+          </PrivateRoute>
+        }
+      />
 
-  <Route
-    path="/admin"
-    element={
-      <PrivateRoute allowed="admin">
-        <Admin />
-      </PrivateRoute>
-    }
-  />
+      {/* ================= ADMIN ================= */}
 
-  {/* ================= 404 ================= */}
+      <Route
+        path="/admin"
+        element={
+          <PrivateRoute allowed="admin">
+            <Admin />
+          </PrivateRoute>
+        }
+      />
 
-  <Route
-    path="*"
-    element={
-      <div style={{ padding: 40, textAlign: "center" }}>
-        <h1>404</h1>
-        <p>Página não encontrada</p>
-      </div>
-    }
-  />
+      {/* ================= 404 ================= */}
 
-</Routes>
+      <Route path="*" element={<Navigate to="/" replace />} />
 
-);
+    </Routes>
+
+  );
 }
 
 export default App;

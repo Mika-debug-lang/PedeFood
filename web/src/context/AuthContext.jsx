@@ -7,7 +7,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* ================= CARREGAR DO LOCALSTORAGE ================= */
+  /* ================= CARREGAR USUÁRIO ================= */
 
   useEffect(() => {
 
@@ -26,20 +26,21 @@ export function AuthProvider({ children }) {
         parsed &&
         typeof parsed === "object" &&
         parsed.token &&
-        Array.isArray(parsed.roles) &&
-        parsed.roles.length > 0
+        Array.isArray(parsed.roles)
       ) {
 
+        const roles = parsed.roles.length ? parsed.roles : ["cliente"];
+
         const areaAtiva =
-          parsed.area && parsed.roles.includes(parsed.area)
+          parsed.area && roles.includes(parsed.area)
             ? parsed.area
-            : parsed.roles[0] || "cliente";
+            : roles[0];
 
         setUser({
-          nome: parsed.nome,
-          email: parsed.email,
+          nome: parsed.nome || "",
+          email: parsed.email || "",
           token: parsed.token,
-          roles: parsed.roles,
+          roles,
           area: areaAtiva
         });
 
@@ -66,26 +67,25 @@ export function AuthProvider({ children }) {
 
   const login = (usuario) => {
 
-    if (
-      !usuario ||
-      !usuario.token ||
-      !Array.isArray(usuario.roles) ||
-      usuario.roles.length === 0
-    ) {
-      console.error("Tentativa de login inválida");
+    if (!usuario || !usuario.token) {
+      console.error("Login inválido");
       return;
     }
 
+    const roles = Array.isArray(usuario.roles) && usuario.roles.length
+      ? usuario.roles
+      : ["cliente"];
+
     const areaAtiva =
-      usuario.area && usuario.roles.includes(usuario.area)
+      usuario.area && roles.includes(usuario.area)
         ? usuario.area
-        : usuario.roles[0] || "cliente";
+        : roles[0];
 
     const userData = {
       nome: usuario.nome || "",
       email: usuario.email || "",
       token: usuario.token,
-      roles: usuario.roles,
+      roles,
       area: areaAtiva
     };
 
@@ -120,6 +120,26 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("user");
 
   };
+
+  /* ================= SINCRONIZAR ENTRE ABAS ================= */
+
+  useEffect(() => {
+
+    const syncLogout = (event) => {
+
+      if (event.key === "user" && !event.newValue) {
+        setUser(null);
+      }
+
+    };
+
+    window.addEventListener("storage", syncLogout);
+
+    return () => {
+      window.removeEventListener("storage", syncLogout);
+    };
+
+  }, []);
 
   return (
     <AuthContext.Provider
