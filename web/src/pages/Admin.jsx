@@ -2,6 +2,11 @@ import { useEffect, useState, useContext, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
 import "./Admin.css";
+import Clientes from "../components/Clientes";
+import Lojas from "../components/Lojas";
+import Pedidos from "../components/Pedidos";
+import Motoboy from "../components/Motoboy"; 
+
 
 function Admin() {
 
@@ -276,7 +281,7 @@ function Admin() {
         <button
           onClick={() => {
             trocarArea("cliente");
-            navigate("/cliente");
+            navigate("/pages/cliente");
             setMenuOpen(false);
           }}
         >
@@ -286,7 +291,7 @@ function Admin() {
         <button
           onClick={() => {
             trocarArea("dono");
-            navigate("/dono");
+            navigate("/pages/dono");
             setMenuOpen(false);
           }}
         >
@@ -296,7 +301,7 @@ function Admin() {
         <button
           onClick={() => {
             trocarArea("motoboy");
-            navigate("/motoboy");
+            navigate("/pages/motoboy");
             setMenuOpen(false);
           }}
         >
