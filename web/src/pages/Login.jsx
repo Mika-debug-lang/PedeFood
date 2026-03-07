@@ -10,6 +10,8 @@ function Login() {
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [area, setArea] = useState("cliente");
+
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -70,9 +72,17 @@ function Login() {
 
       /* ================= NORMALIZAR ROLES ================= */
 
-      const roles = Array.isArray(data.roles) && data.roles.length > 0
-        ? data.roles
-        : ["cliente"];
+      const roles =
+        Array.isArray(data.roles) && data.roles.length > 0
+          ? data.roles
+          : ["cliente"];
+
+      /* ================= VERIFICAR SE PODE ENTRAR NA ÁREA ================= */
+
+      if (!roles.includes(area)) {
+        setErro(`Você não possui acesso como ${area}`);
+        return;
+      }
 
       const usuario = {
         nome: data.nome || "",
@@ -83,15 +93,7 @@ function Login() {
 
       login(usuario);
 
-      /* ================= REDIRECIONAMENTO ================= */
-
-      const prioridade = ["admin", "dono", "motoboy", "cliente"];
-
-      let destino = prioridade.find(role => roles.includes(role));
-
-      if (!destino) destino = "cliente";
-
-      navigate(`/${destino}`, { replace: true });
+      navigate(`/${area}`, { replace: true });
 
     } catch (err) {
 
@@ -141,6 +143,27 @@ function Login() {
             onChange={(e) => setSenha(e.target.value)}
             required
           />
+
+          {/* ================= SELEÇÃO DE ÁREA ================= */}
+
+          <select
+            value={area}
+            onChange={(e) => setArea(e.target.value)}
+          >
+
+            <option value="cliente">
+              Entrar como Cliente
+            </option>
+
+            <option value="dono">
+              Entrar como Dono
+            </option>
+
+            <option value="motoboy">
+              Entrar como Motoboy
+            </option>
+
+          </select>
 
           <button type="submit" disabled={loading}>
             {loading ? "Entrando..." : "Entrar"}
