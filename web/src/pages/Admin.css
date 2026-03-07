@@ -4,6 +4,7 @@
   display: flex;
   min-height: 100vh;
   background: #f4f6f9;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
 /* ================= CONTEÚDO ================= */
@@ -49,6 +50,18 @@
   margin-bottom: 15px;
 }
 
+.admin-card h3 {
+  font-size: 20px;
+  margin-bottom: 6px;
+}
+
+.admin-card p {
+  font-size: 14px;
+  color: #555;
+}
+
+/* ================= ACTIONS ================= */
+
 .admin-actions {
   display: flex;
   gap: 10px;
@@ -64,10 +77,6 @@
   font-weight: 600;
   background: #111827;
   color: white;
-}
-
-.admin-actions button.danger {
-  background: #e11d48;
 }
 
 /* ================= SIDEBAR ================= */
@@ -118,7 +127,7 @@
   background: transparent;
 }
 
-/* ================= BOTÃO DANGER PREMIUM ================= */
+/* ================= BOTÃO DANGER ================= */
 
 .admin-actions button.danger,
 .admin-card button.danger {
@@ -136,7 +145,6 @@
   overflow: hidden;
 }
 
-/* Hover */
 .admin-actions button.danger:hover,
 .admin-card button.danger:hover {
   transform: translateY(-3px);
@@ -144,14 +152,11 @@
   background: linear-gradient(135deg, #ff1f5a, #b71c1c);
 }
 
-/* Clique */
 .admin-actions button.danger:active,
 .admin-card button.danger:active {
   transform: scale(0.97);
-  box-shadow: 0 5px 15px rgba(213, 0, 0, 0.4);
 }
 
-/* Efeito brilho animado */
 .admin-actions button.danger::after,
 .admin-card button.danger::after {
   content: "";
@@ -168,4 +173,65 @@
 .admin-actions button.danger:hover::after,
 .admin-card button.danger:hover::after {
   left: 130%;
+}
+
+/* ================= TABLET ================= */
+
+@media (max-width: 1024px) {
+
+  .admin-layout {
+    flex-direction: column;
+  }
+
+  .admin-sidebar {
+    width: 100%;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    border-left: none;
+    border-bottom: 4px solid #ff2e4d;
+  }
+
+  .admin-sidebar button {
+    flex: 1;
+    margin-bottom: 0;
+  }
+
+}
+
+/* ================= CELULAR ================= */
+
+@media (max-width: 600px) {
+
+  .admin-content-area {
+    padding: 25px;
+  }
+
+  .admin-content-area h1 {
+    font-size: 24px;
+  }
+
+  .admin-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .admin-card img {
+    height: 150px;
+  }
+
+  .admin-actions {
+    flex-direction: column;
+  }
+
+  .admin-actions button {
+    width: 100%;
+  }
+
+  .admin-sidebar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 20px;
+  }
+
 }
