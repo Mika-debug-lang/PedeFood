@@ -8,17 +8,18 @@ const lojaSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      index: true
     },
 
     descricao: {
       type: String,
       required: true,
-      trim: true,
+      trim: true
     },
 
     imagem: {
       type: String,
-      required: true,
+      default: ""
     },
 
     categoria: {
@@ -26,33 +27,42 @@ const lojaSchema = new mongoose.Schema(
       required: true,
       trim: true,
       lowercase: true,
+      index: true
     },
 
     donoId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Usuario",
       required: true,
-      index: true,
+      index: true
     },
 
     status: {
       type: String,
       enum: ["pendente", "aprovada", "rejeitada"],
       default: "pendente",
-    },
+      index: true
+    }
   },
   {
-    timestamps: true,
+    timestamps: true
   }
 );
 
-/* ================= NORMALIZAR STATUS ================= */
-/* 🔥 SEM next(), versão moderna */
+/* ================= NORMALIZAÇÃO ================= */
 
 lojaSchema.pre("save", function () {
-  if (this.status) {
-    this.status = this.status.toLowerCase();
+
+  if (this.status && typeof this.status === "string") {
+    this.status = this.status.toLowerCase().trim();
   }
+
+  if (this.categoria && typeof this.categoria === "string") {
+    this.categoria = this.categoria.toLowerCase().trim();
+  }
+
 });
+
+/* ================= EXPORT ================= */
 
 module.exports = mongoose.model("Loja", lojaSchema);

@@ -5,7 +5,6 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const path = require("path");
 
 const Loja = require("./models/Loja");
 const Produto = require("./models/Produto");
@@ -19,10 +18,12 @@ const TODAS_ROLES = ["cliente", "dono", "motoboy", "admin"];
 
 /* ================= CORS ================= */
 
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
 
 app.use(express.json({ limit: "10mb" }));
 
@@ -30,18 +31,18 @@ app.use(express.json({ limit: "10mb" }));
 
 ["MONGO_URL", "JWT_SECRET", "ADMIN_EMAIL"].forEach((env) => {
   if (!process.env[env]) {
-    console.error(`${env} não definida`);
+    console.error(`❌ Variável ${env} não definida`);
     process.exit(1);
   }
 });
 
-/* ================= CONEXÃO ================= */
+/* ================= CONEXÃO MONGO ================= */
 
 mongoose
   .connect(process.env.MONGO_URL)
-  .then(() => console.log("Mongo conectado"))
+  .then(() => console.log("✅ MongoDB conectado"))
   .catch((err) => {
-    console.error("Erro Mongo:", err);
+    console.error("❌ Erro MongoDB:", err);
     process.exit(1);
   });
 
@@ -49,9 +50,18 @@ mongoose
 
 const usuarioSchema = new mongoose.Schema(
   {
-    nome: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    nome: { type: String, required: true, trim: true },
+
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+
     senha: { type: String, required: true },
+
     roles: {
       type: [String],
       enum: TODAS_ROLES,
@@ -66,7 +76,6 @@ const Usuario = mongoose.model("Usuario", usuarioSchema);
 /* ================= MIDDLEWARE ================= */
 
 function autenticarToken(req, res, next) {
-
   const authHeader = req.headers.authorization;
 
   if (!authHeader)
@@ -75,7 +84,6 @@ function autenticarToken(req, res, next) {
   const token = authHeader.split(" ")[1];
 
   try {
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     req.usuario = {
@@ -84,18 +92,13 @@ function autenticarToken(req, res, next) {
     };
 
     next();
-
   } catch {
-
     return res.status(403).json({ erro: "Token inválido" });
-
   }
-
 }
 
 function autorizarRoles(rolesPermitidas) {
   return (req, res, next) => {
-
     const permitido = rolesPermitidas.some((role) =>
       req.usuario.roles.includes(role)
     );
@@ -104,7 +107,6 @@ function autorizarRoles(rolesPermitidas) {
       return res.status(403).json({ erro: "Acesso negado" });
 
     next();
-
   };
 }
 
@@ -112,7 +114,6 @@ function autorizarRoles(rolesPermitidas) {
 
 app.post("/register", async (req, res) => {
   try {
-
     const { nome, email, senha, tipo } = req.body;
 
     if (!nome || !email || !senha || !tipo)
@@ -126,7 +127,6 @@ app.post("/register", async (req, res) => {
     let usuario = await Usuario.findOne({ email: emailNormalizado });
 
     if (usuario) {
-
       if (usuario.roles.includes(tipo))
         return res
           .status(400)
@@ -139,7 +139,6 @@ app.post("/register", async (req, res) => {
         mensagem: `Permissão '${tipo}' adicionada com sucesso`,
         roles: usuario.roles,
       });
-
     }
 
     const senhaHash = await bcrypt.hash(senha, 10);
@@ -155,12 +154,9 @@ app.post("/register", async (req, res) => {
       mensagem: "Usuário criado com sucesso",
       roles: novoUsuario.roles,
     });
-
   } catch (err) {
-
     console.error(err);
     res.status(500).json({ erro: "Erro interno" });
-
   }
 });
 
@@ -168,7 +164,6 @@ app.post("/register", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   try {
-
     const { email, senha } = req.body;
 
     if (!email || !senha)
@@ -181,21 +176,18 @@ app.post("/login", async (req, res) => {
     if (!usuario)
       return res.status(400).json({ erro: "Usuário não encontrado" });
 
-    const senhaValida = await bcrypt.compare(
-      senha,
-      usuario.senha
-    );
+    const senhaValida = await bcrypt.compare(senha, usuario.senha);
 
     if (!senhaValida)
       return res.status(401).json({ erro: "Senha incorreta" });
 
-    if (usuario.email === process.env.ADMIN_EMAIL) {
+    /* ADMIN AUTOMÁTICO */
 
+    if (usuario.email === process.env.ADMIN_EMAIL) {
       if (!usuario.roles.includes("admin")) {
         usuario.roles.push("admin");
         await usuario.save();
       }
-
     }
 
     const token = jwt.sign(
@@ -213,101 +205,70 @@ app.post("/login", async (req, res) => {
       roles: usuario.roles,
       token,
     });
-
   } catch (err) {
-
     console.error(err);
     res.status(500).json({ erro: "Erro interno" });
-
   }
 });
 
 /* ================= LOJAS ================= */
 
 app.get("/lojas", async (req, res) => {
-
   try {
-
-    const lojas = await Loja.find().sort({ createdAt: -1 });
+    const lojas = await Loja.find({ status: "aprovada" }).sort({
+      createdAt: -1,
+    });
 
     res.json(lojas);
-
   } catch {
-
     res.status(500).json({ erro: "Erro ao buscar lojas" });
-
   }
-
 });
 
 app.get("/lojas/pendentes", async (req, res) => {
-
   try {
-
     const lojas = await Loja.find({ status: "pendente" });
 
     res.json(lojas);
-
   } catch {
-
     res.status(500).json({ erro: "Erro ao buscar lojas pendentes" });
-
   }
-
 });
 
-app.get("/lojas/ativas", async (req, res) => {
-
+app.get("/lojas/aprovadas", async (req, res) => {
   try {
-
-    const lojas = await Loja.find({ status: "ativa" });
+    const lojas = await Loja.find({ status: "aprovada" });
 
     res.json(lojas);
-
   } catch {
-
-    res.status(500).json({ erro: "Erro ao buscar lojas ativas" });
-
+    res.status(500).json({ erro: "Erro ao buscar lojas aprovadas" });
   }
-
 });
 
 /* ================= PRODUTOS ================= */
 
 app.get("/produtos/:lojaId", async (req, res) => {
-
   try {
-
     const produtos = await Produto.find({
       lojaId: req.params.lojaId,
     }).sort({ createdAt: -1 });
 
     res.json(produtos);
-
   } catch {
-
     res.status(500).json({ erro: "Erro ao buscar produtos" });
-
   }
-
 });
 
-/* ================= SERVIR FRONTEND ================= */
+/* ================= HEALTH CHECK ================= */
 
-const frontendPath = path.join(__dirname, "dist");
-
-app.use(express.static(frontendPath));
-
-/* ================= ROTAS REACT ================= */
-
-app.get("*", (req, res) => {
-
-  res.sendFile(path.join(frontendPath, "index.html"));
-
+app.get("/", (req, res) => {
+  res.json({ status: "API funcionando 🚀" });
 });
 
 /* ================= START ================= */
 
-app.listen(process.env.PORT || 10000, () =>
-  console.log("Servidor rodando 🚀")
+const PORT = process.env.PORT || 10000;
+
+app.listen(PORT, () =>
+  console.log(`🚀 Servidor rodando na porta ${PORT}`)
 );
